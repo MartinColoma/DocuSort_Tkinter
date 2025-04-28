@@ -7,6 +7,14 @@ from datetime import datetime
 
 # Create the main application window
 class DocuSortApp:
+
+    def only_numbers_and_dash(self, input_text):
+    # allow digits and dash, and allow empty input
+        return all(c.isdigit() or c == '-' for c in input_text) or input_text == ""
+
+    def only_letters(self, input_text):
+        return input_text.isalpha() or input_text == ""
+
     def __init__(self, root):
         self.root = root
         self.root.title("DOCUSORT")
@@ -97,22 +105,29 @@ class DocuSortApp:
         tk.Label(form_frame, text="Sender Information", font=("Courier New", 40, "bold"), fg="#58cc02", bg="#131f24").grid(row=0, column=0, columnspan=4, pady=30)
 
         # First Name and Last Name (in the same row)
+        vcmd = (self.root.register(self.only_letters), '%P')
         tk.Label(form_frame, text="First Name:", font=("Courier New", 18), fg="white", bg="#131f24").grid(row=1, column=0, padx=10, pady=5, sticky=tk.W)
-        self.first_name_entry = tk.Entry(form_frame, font=("Courier New", 18), fg="white", bg="#131f24", width=18)
+        self.first_name_entry = tk.Entry(form_frame, font=("Courier New", 18), fg="white", bg="#131f24", width=18, validate="key", validatecommand=vcmd)
         self.first_name_entry.grid(row=2, column=0, padx=10, pady=5, sticky=tk.W)
 
         tk.Label(form_frame, text="Last Name:", font=("Courier New", 18), fg="white", bg="#131f24").grid(row=1, column=2, padx=10, pady=5, sticky=tk.W)
-        self.last_name_entry = tk.Entry(form_frame, font=("Courier New", 18), fg="white", bg="#131f24", width=18)
+        self.last_name_entry = tk.Entry(form_frame, font=("Courier New", 18), fg="white", bg="#131f24", width=18, validate="key", validatecommand=vcmd)
         self.last_name_entry.grid(row=2, column=2, padx=10, pady=5, sticky=tk.W)
 
         # Student ID and Section (in the next row)
+        vcmd_student_no = (self.root.register(self.only_numbers_and_dash), '%P')
+
         tk.Label(form_frame, text="Student ID #:", font=("Courier New", 18), fg="white", bg="#131f24").grid(row=3, column=0, padx=10, pady=5, sticky=tk.W)
-        self.student_id_entry = tk.Entry(form_frame, font=("Courier New", 18), fg="white", bg="#131f24", width=18)
+
+        self.student_id_entry = tk.Entry(form_frame, font=("Courier New", 18), fg="white", bg="#131f24", width=18,
+                                        validate="key", validatecommand=vcmd_student_no)  # <<=== ADD THIS!
         self.student_id_entry.grid(row=4, column=0, padx=10, pady=5, sticky=tk.W)
 
         tk.Label(form_frame, text="Section:", font=("Courier New", 18), fg="white", bg="#131f24").grid(row=3, column=2, padx=10, pady=5, sticky=tk.W)
+
         self.section_entry = tk.Entry(form_frame, font=("Courier New", 18), fg="white", bg="#131f24", width=18)
         self.section_entry.grid(row=4, column=2, padx=10, pady=5, sticky=tk.W)
+
 
         # Faculty and Course (in the next row)
         tk.Label(form_frame, text="Faculty:", font=("Courier New", 18), fg="white", bg="#131f24").grid(row=5, column=0, padx=10, pady=5, sticky=tk.W)
@@ -124,7 +139,8 @@ class DocuSortApp:
             "College of Education",
             "College of Arts and Sciences",
             "Institute of Human Kinetics"
-        ])
+        ]
+        )
         self.faculty_combobox.grid(row=6, column=0, columnspan=4, padx=10, pady=5, sticky=tk.W)
 
         tk.Label(form_frame, text="Course:", font=("Courier New", 18), fg="white", bg="#131f24").grid(row=7, column=0, padx=10, pady=5, sticky=tk.W)
@@ -202,24 +218,22 @@ class DocuSortApp:
         self.course_combobox['values'] = course_list
 
     def save_sender_info(self):
-        # Store the entered information in the class variables
-        self.first_name = self.first_name_entry.get()
-        self.last_name = self.last_name_entry.get()
-        self.student_id = self.student_id_entry.get()
-        self.section = self.section_entry.get()
-        self.faculty = self.faculty_combobox.get()
-        self.course = self.course_combobox.get()
+        # Get the entered information
+        self.first_name = self.first_name_entry.get().strip()
+        self.last_name = self.last_name_entry.get().strip()
+        self.student_id = self.student_id_entry.get().strip()
+        self.section = self.section_entry.get().strip()
+        self.faculty = self.faculty_combobox.get().strip()
+        self.course = self.course_combobox.get().strip()
 
-        # Print the entered information (for now)
-        print(f"First Name: {self.first_name}")
-        print(f"Last Name: {self.last_name}")
-        print(f"Student ID: {self.student_id}")
-        print(f"Section: {self.section}")
-        print(f"Faculty: {self.faculty}")
-        print(f"Course: {self.course}")
-        
-        # Proceed to receiver info page
+        # Check if any field is empty
+        if not all([self.first_name, self.last_name, self.student_id, self.section, self.faculty, self.course]):
+            messagebox.showerror("Missing Information", "Please fill in all the fields before proceeding.")
+            return  # Stop the function if any field is empty
+
+        # Proceed to next page if all fields are filled
         self.receiver_info_page()
+
 
     def receiver_info_page(self):
         # Clear any previous widgets (if any)
@@ -287,30 +301,36 @@ class DocuSortApp:
         self.receiver_faculty_combobox.bind("<<ComboboxSelected>>", self.update_receiver_courses)
 
 
-    def submit_receiver_info(self):
-        # Gather the sender's information
-        sender_info = {
-            "Sender First Name": self.first_name,
-            "Sender Last Name": self.last_name,
-            "Sender Student ID": self.student_id,
-            "Sender Section": self.section,
-            "Sender Faculty": self.faculty,
-            "Sender Course": self.course,
-        }
+        def submit_receiver_info(self):
+            receiver_first_name = self.receiver_first_name_entry.get().strip()
+            receiver_last_name = self.receiver_last_name_entry.get().strip()
+            receiver_faculty = self.receiver_faculty_combobox.get().strip()
 
-        # Gather the receiver's information
-        receiver_info = {
-            "Receiver First Name": self.receiver_first_name_entry.get(),
-            "Receiver Last Name": self.receiver_last_name_entry.get(),
-            "Receiver Faculty": self.receiver_faculty_combobox.get(),
-        }
+            # Check if any field is empty
+            if not all([receiver_first_name, receiver_last_name, receiver_faculty]):
+                messagebox.showerror("Missing Information", "Please complete all the receiver fields before submitting.")
+                return  # Stop the function if any field is empty
 
-        # Combine both sender and receiver information into one string
-        all_info = "\n".join([f"{key}: {value}" for key, value in {**sender_info, **receiver_info}.items()])
+            # If everything is filled, continue
+            sender_info = {
+                "Sender First Name": self.first_name,
+                "Sender Last Name": self.last_name,
+                "Sender Student ID": self.student_id,
+                "Sender Section": self.section,
+                "Sender Faculty": self.faculty,
+                "Sender Course": self.course,
+            }
 
-        # Show a popup with both sender and receiver information
-        messagebox.showinfo("Submitted Information", all_info)
-        self.go_back_to_landing_page()
+            receiver_info = {
+                "Receiver First Name": receiver_first_name,
+                "Receiver Last Name": receiver_last_name,
+                "Receiver Faculty": receiver_faculty,
+            }
+
+            all_info = "\n".join([f"{key}: {value}" for key, value in {**sender_info, **receiver_info}.items()])
+            messagebox.showinfo("Submitted Information", all_info)
+            self.go_back_to_landing_page()
+
 
 
 # Create the main Tkinter window and pass it to the DocuSortApp

@@ -132,10 +132,12 @@ class DocuSortApp:
         tk.Label(form_frame, text="First Name:", font=("Courier New", 18), fg="white", bg="#131f24").grid(row=1, column=0, padx=10, pady=5, sticky=tk.W)
         self.first_name_entry = tk.Entry(form_frame, font=("Courier New", 18), fg="white", bg="#131f24", width=18, validate="key", validatecommand=vcmd)
         self.first_name_entry.grid(row=2, column=0, padx=10, pady=5, sticky=tk.W)
+        self.first_name_entry.insert(0, self.first_name)
 
         tk.Label(form_frame, text="Last Name:", font=("Courier New", 18), fg="white", bg="#131f24").grid(row=1, column=2, padx=10, pady=5, sticky=tk.W)
         self.last_name_entry = tk.Entry(form_frame, font=("Courier New", 18), fg="white", bg="#131f24", width=18, validate="key", validatecommand=vcmd)
         self.last_name_entry.grid(row=2, column=2, padx=10, pady=5, sticky=tk.W)
+        self.last_name_entry.insert(0, self.last_name)
 
         # Student ID and Section (in the next row)
         vcmd_student_no = (self.root.register(self.only_numbers_and_dash), '%P')
@@ -143,9 +145,12 @@ class DocuSortApp:
         self.student_id_entry = tk.Entry(form_frame, font=("Courier New", 18), fg="white", bg="#131f24", width=18,
                                         validate="key", validatecommand=vcmd_student_no)  # <<=== ADD THIS!
         self.student_id_entry.grid(row=4, column=0, padx=10, pady=5, sticky=tk.W)
+        self.student_id_entry.insert(0, self.student_id)
+
         tk.Label(form_frame, text="Section:", font=("Courier New", 18), fg="white", bg="#131f24").grid(row=3, column=2, padx=10, pady=5, sticky=tk.W)
         self.section_entry = tk.Entry(form_frame, font=("Courier New", 18), fg="white", bg="#131f24", width=18)
         self.section_entry.grid(row=4, column=2, padx=10, pady=5, sticky=tk.W)
+        self.section_entry.insert(0, self.section)
 
         # Faculty and Course (in the next row)
         tk.Label(form_frame, text="Faculty:", font=("Courier New", 18), fg="white", bg="#131f24").grid(row=5, column=0, padx=10, pady=5, sticky=tk.W)
@@ -159,10 +164,13 @@ class DocuSortApp:
             "Institute of Human Kinetics"
         ])
         self.faculty_combobox.grid(row=6, column=0, columnspan=4, padx=10, pady=5, sticky=tk.W)
+        self.faculty_combobox.set(self.faculty)
 
         tk.Label(form_frame, text="Course:", font=("Courier New", 18), fg="white", bg="#131f24").grid(row=7, column=0, padx=10, pady=5, sticky=tk.W)
         self.course_combobox = ttk.Combobox(form_frame, font=("Courier New", 18), width=39, state="readonly")
         self.course_combobox.grid(row=8, column=0, columnspan=4, padx=10, pady=5, sticky=tk.W)
+        self.course_combobox.set(self.course)
+        
 
         # Cancel Button (Transparent background, white text)
         cancel_button = tk.Button(
@@ -196,7 +204,7 @@ class DocuSortApp:
         # Bind faculty selection to update courses
         self.faculty_combobox.bind("<<ComboboxSelected>>", self.update_courses)
 
-
+    
 
     def go_back_to_landing_page(self):
         # Clears all widgets on the current page and returns to the landing page

@@ -7,6 +7,13 @@ from datetime import datetime
 
 # Create the main application window
 class DocuSortApp:
+    def only_numbers_and_dash(self, input_text):
+    # allow digits and dash, and allow empty input
+        return all(c.isdigit() or c == '-' for c in input_text) or input_text == ""
+
+    def only_letters(self, input_text):
+        return input_text.isalpha() or input_text == ""
+    
     def __init__(self, root):
         self.root = root
         self.root.title("DOCUSORT")
@@ -121,19 +128,21 @@ class DocuSortApp:
         tk.Label(form_frame, text="Sender Information", font=("Courier New", 40, "bold"), fg="#58cc02", bg="#131f24").grid(row=0, column=0, columnspan=4, pady=30)
 
         # First Name and Last Name (in the same row)
+        vcmd = (self.root.register(self.only_letters), '%P')
         tk.Label(form_frame, text="First Name:", font=("Courier New", 18), fg="white", bg="#131f24").grid(row=1, column=0, padx=10, pady=5, sticky=tk.W)
-        self.first_name_entry = tk.Entry(form_frame, font=("Courier New", 18), fg="white", bg="#131f24", width=18)
+        self.first_name_entry = tk.Entry(form_frame, font=("Courier New", 18), fg="white", bg="#131f24", width=18, validate="key", validatecommand=vcmd)
         self.first_name_entry.grid(row=2, column=0, padx=10, pady=5, sticky=tk.W)
 
         tk.Label(form_frame, text="Last Name:", font=("Courier New", 18), fg="white", bg="#131f24").grid(row=1, column=2, padx=10, pady=5, sticky=tk.W)
-        self.last_name_entry = tk.Entry(form_frame, font=("Courier New", 18), fg="white", bg="#131f24", width=18)
+        self.last_name_entry = tk.Entry(form_frame, font=("Courier New", 18), fg="white", bg="#131f24", width=18, validate="key", validatecommand=vcmd)
         self.last_name_entry.grid(row=2, column=2, padx=10, pady=5, sticky=tk.W)
 
         # Student ID and Section (in the next row)
+        vcmd_student_no = (self.root.register(self.only_numbers_and_dash), '%P')
         tk.Label(form_frame, text="Student ID #:", font=("Courier New", 18), fg="white", bg="#131f24").grid(row=3, column=0, padx=10, pady=5, sticky=tk.W)
-        self.student_id_entry = tk.Entry(form_frame, font=("Courier New", 18), fg="white", bg="#131f24", width=18)
+        self.student_id_entry = tk.Entry(form_frame, font=("Courier New", 18), fg="white", bg="#131f24", width=18,
+                                        validate="key", validatecommand=vcmd_student_no)  # <<=== ADD THIS!
         self.student_id_entry.grid(row=4, column=0, padx=10, pady=5, sticky=tk.W)
-
         tk.Label(form_frame, text="Section:", font=("Courier New", 18), fg="white", bg="#131f24").grid(row=3, column=2, padx=10, pady=5, sticky=tk.W)
         self.section_entry = tk.Entry(form_frame, font=("Courier New", 18), fg="white", bg="#131f24", width=18)
         self.section_entry.grid(row=4, column=2, padx=10, pady=5, sticky=tk.W)
@@ -242,7 +251,12 @@ class DocuSortApp:
         print(f"Faculty: {self.faculty}")
         print(f"Course: {self.course}")
         
-        # Proceed to receiver info page
+        # Check if any field is empty
+        if not all([self.first_name, self.last_name, self.student_id, self.section, self.faculty, self.course]):
+            messagebox.showerror("Missing Information", "Please fill in all the fields before proceeding.")
+            return  # Stop the function if any field is empty
+
+        # Proceed to next page if all fields are filled
         self.receiver_info_page()
 
     def receiver_info_page(self):
@@ -258,12 +272,13 @@ class DocuSortApp:
         tk.Label(form_frame, text="Receiver Information", font=("Courier New", 32, "bold"), fg="#58cc02", bg="#131f24").grid(row=0, column=0, columnspan=4, pady=50)
 
         # First Name and Last Name (in the same row)
+        vcmd = (self.root.register(self.only_letters), '%P')
         tk.Label(form_frame, text="First Name:", font=("Courier New", 18), fg="white", bg="#131f24").grid(row=1, column=0, padx=10, pady=5, sticky=tk.W)
-        self.receiver_first_name_entry = tk.Entry(form_frame, font=("Courier New", 18), fg="white", bg="#131f24", width=18)
+        self.receiver_first_name_entry = tk.Entry(form_frame, font=("Courier New", 18), fg="white", bg="#131f24", width=18, validate="key", validatecommand=vcmd)
         self.receiver_first_name_entry.grid(row=2, column=0, padx=10, pady=5, sticky=tk.W)
 
         tk.Label(form_frame, text="Last Name:", font=("Courier New", 18), fg="white", bg="#131f24").grid(row=1, column=2, padx=10, pady=5, sticky=tk.W)
-        self.receiver_last_name_entry = tk.Entry(form_frame, font=("Courier New", 18), fg="white", bg="#131f24", width=18)
+        self.receiver_last_name_entry = tk.Entry(form_frame, font=("Courier New", 18), fg="white", bg="#131f24", width=18, validate="key", validatecommand=vcmd)
         self.receiver_last_name_entry.grid(row=2, column=2, padx=10, pady=5, sticky=tk.W)
 
         # Faculty (in the same row)

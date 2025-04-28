@@ -7,10 +7,9 @@ class DocuSortApp:
     def __init__(self, root):
         self.root = root
         self.root.title("DOCUSORT")
-        self.root.geometry("1718x1080")
-        self.root.state('zoomed')
         self.root.resizable(False,False)
         self.root.configure(bg="#131f24")
+        self.root.geometry(f"{self.root.winfo_screenwidth()}x{self.root.winfo_screenheight()}+0+0")
 
         # Initialize data fields
         self.first_name = ""

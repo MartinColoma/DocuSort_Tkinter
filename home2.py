@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
+from PIL import Image, ImageTk
 
 # Create the main application window
 class DocuSortApp:
@@ -21,28 +22,60 @@ class DocuSortApp:
         self.landing_page()
 
     def landing_page(self):
-        # Clear any previous widgets (if any)
+        # Clear previous widgets
         for widget in self.root.winfo_children():
             widget.destroy()
 
-        # Create a frame to hold the content with the desired background color
-        frame = tk.Frame(self.root, bg="#131f24")  # Dark background color
+        frame = tk.Frame(self.root, bg="#131f24")
         frame.pack(fill=tk.BOTH, expand=True)
 
-        # Create a frame for the logo to place the labels side by side
+        # Frame for logo and image
         logo_frame = tk.Frame(frame, bg="#131f24")
-        logo_frame.pack(pady=(350, 50))
+        logo_frame.pack(pady=(200, 20))  # Adjust padding as you like
 
-        # Add both parts of the logo in one row
-        header_label = tk.Label(logo_frame, text="DOCU", font=("Courier New", 100), fg="white", bg="#131f24")
+        # Load the top image (this will be placed above the DOCUSORT text)
+        try:
+            top_image = Image.open("resources/HomeHeader.png")  # Replace with your image path
+            top_image = top_image.resize((300, 150))  # Resize as needed
+            self.top_photo = ImageTk.PhotoImage(top_image)
+
+            # Place the top image above the text
+            top_img_label = tk.Label(logo_frame, image=self.top_photo, bg="#131f24")
+            top_img_label.pack(pady=(0, 10))  # Adjust the padding to position it correctly
+        except Exception as e:
+            print(f"Error loading top image: {e}")
+            # Optional: Show a default text label if image loading fails
+            fallback_label = tk.Label(logo_frame, text="TOP IMAGE NOT FOUND", font=("Courier New", 20), fg="red", bg="#131f24")
+            fallback_label.pack(pady=(0, 10))
+
+        # Load the main image (next to the DOCUSORT text)
+        try:
+            image = Image.open("resources/docusort_test.png")  # Replace with your image path
+            image = image.resize((150, 150))  # Resize if needed
+            self.photo = ImageTk.PhotoImage(image)
+
+            # Place the image on the left
+            img_label = tk.Label(logo_frame, image=self.photo, bg="#131f24")
+            img_label.pack(side=tk.LEFT, padx=20)
+        except Exception as e:
+            print(f"Error loading image: {e}")
+            # Optional: Show a default text label if image loading fails
+            fallback_label = tk.Label(logo_frame, text="IMAGE NOT FOUND", font=("Courier New", 20), fg="red", bg="#131f24")
+            fallback_label.pack(side=tk.LEFT, padx=20)
+
+        # Text Logo beside the picture
+        text_frame = tk.Frame(logo_frame, bg="#131f24")
+        text_frame.pack(side=tk.LEFT)
+
+        header_label = tk.Label(text_frame, text="DOCU", font=("Courier New", 100), fg="white", bg="#131f24")
         header_label.pack(side=tk.LEFT)
 
-        sort_label = tk.Label(logo_frame, text="SORT", font=("Courier New", 100, "bold"), fg="#58cc02", bg="#131f24")
+        sort_label = tk.Label(text_frame, text="SORT", font=("Courier New", 100, "bold"), fg="#58cc02", bg="#131f24")
         sort_label.pack(side=tk.LEFT)
 
-        # Add start button below the logo
+        # Start Button below
         start_button = tk.Button(frame, text="START", font=("Courier New", 40), command=self.sender_info_page, bg="#58cc02", fg="#fff")
-        start_button.pack(pady=20)
+        start_button.pack(pady=30)
 
     
 

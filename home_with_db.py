@@ -16,7 +16,7 @@ class DocuSortApp:
     
     def __init__(self, root):
         self.root = root
-        self.root.title("DOCUSORT")
+        self.root.title("DocuSort")
         self.root.resizable(False, False)
         self.root.configure(bg="#131f24")
         self.root.geometry(f"{self.root.winfo_screenwidth()}x{self.root.winfo_screenheight()}+0+0")
@@ -109,10 +109,104 @@ class DocuSortApp:
         sort_label.pack(side=tk.LEFT)
 
         # Start Button below
-        start_button = tk.Button(frame, text="Let's get sorting", font=("Courier New", 18), command=self.sender_info_page, bg="#58cc02", fg="#fff")
+        start_button = tk.Button(frame, text="Let's get sorting", font=("Courier New", 18), command=self.sender_info_page, bg="#58cc02", fg="#131f24", cursor="hand2", relief="flat")
         start_button.pack(pady=30)
 
-    
+
+        admin_button = tk.Button(
+            frame,
+            text="Admin Login",
+            font=("Courier New", 18),
+            command=self.admin_login_page,
+            bg="#131f24",
+            fg="#58cc02",
+            activebackground="#131f24",
+            activeforeground="#58cc02",
+            borderwidth=0,
+            highlightthickness=0,
+            relief="flat",
+            cursor="hand2"
+        )
+
+        # Place it in the bottom-right corner with a margin
+        admin_button.place(relx=1.0, rely=1.0, anchor="se", x=-30, y=-50)
+
+    def admin_login_page(self):
+        
+        # Clear any previous widgets
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        # Create a frame for the login form
+        form_frame = tk.Frame(self.root, bg="#131f24")
+        form_frame.pack(pady=(150, 18))
+
+        # Header
+        tk.Label(form_frame, text="Admin Login", font=("Courier New", 40, "bold"),
+                fg="#58cc02", bg="#131f24").grid(row=0, column=0, columnspan=2, pady=30)
+
+        # Username
+        tk.Label(form_frame, text="Username:", font=("Courier New", 18),
+                fg="white", bg="#131f24").grid(row=1, column=0, padx=10, pady=5, sticky=tk.W)
+        self.username_entry = tk.Entry(form_frame, font=("Courier New", 18),
+                                    fg="white", bg="#131f24", width=30)
+        self.username_entry.grid(row=2, column=0, columnspan=2, padx=10, pady=5)
+
+        # Password
+        tk.Label(form_frame, text="Password:", font=("Courier New", 18),
+                fg="white", bg="#131f24").grid(row=3, column=0, padx=10, pady=5, sticky=tk.W)
+        self.password_entry = tk.Entry(form_frame, font=("Courier New", 18),
+                                    fg="white", bg="#131f24", show="*", width=30)
+        self.password_entry.grid(row=4, column=0, columnspan=2, padx=10, pady=5)
+
+        cancel_button = tk.Button(
+            form_frame,
+            text="Cancel",
+            font=("Courier New", 18),
+            command=self.go_back_to_landing_page,
+            fg="white",  # Text color is white
+            bg=form_frame.cget("bg"),  # Same as the background of the frame
+            relief="flat",  # Flat button with no border
+            cursor="hand2"
+        )
+        cancel_button.grid(row=5, column=0, pady=(40, 0), sticky=tk.E, padx=(0,125))
+
+        # Next Button (Custom background color #58cc02, white text)
+        admin_loginbtn = tk.Button(
+            form_frame,
+            text="Login",
+            font=("Courier New", 18),
+            command=self.validate_login,
+            fg="#131f24",  # Text color is white
+            bg="#58cc02",  # Custom background color
+            relief="flat",  # Flat button with no border
+            activebackground="#58cc02",  # Same color when clicked
+            activeforeground="white"  # Text color when clicked
+        )
+        admin_loginbtn.grid(row=5, column=1, pady=(40, 0), sticky=tk.W, padx=(110, 0))
+    def validate_login(self):
+        username = self.username_entry.get()
+        password = self.password_entry.get()
+        
+        # First check if fields are empty
+        if not username or not password:
+            messagebox.showerror("Login Failed", "Username and password cannot be empty")
+            return  # Exit the function early
+            
+        # Then check for correct credentials
+        if username == "admin" and password == "admin123":
+            messagebox.showinfo("Login Successful", "Welcome Admin!")
+            
+            # Hide the login window
+            self.root.withdraw()
+            
+            # Import here to avoid circular imports
+            from admin import AdminHomePage
+            
+            admin_window = tk.Toplevel(self.root)
+            AdminHomePage(admin_window)
+        else:
+            messagebox.showerror("Login Failed", "Incorrect Username or Password")
 
     def sender_info_page(self):
         # Clear any previous widgets (if any)
@@ -250,14 +344,6 @@ class DocuSortApp:
         self.section = self.section_entry.get()
         self.faculty = self.faculty_combobox.get()
         self.course = self.course_combobox.get()
-
-        # Print the entered information (for now)
-        print(f"First Name: {self.first_name}")
-        print(f"Last Name: {self.last_name}")
-        print(f"Student ID: {self.student_id}")
-        print(f"Section: {self.section}")
-        print(f"Faculty: {self.faculty}")
-        print(f"Course: {self.course}")
         
         # Check if any field is empty
         if not all([self.first_name, self.last_name, self.student_id, self.section, self.faculty, self.course]):
@@ -291,7 +377,7 @@ class DocuSortApp:
 
         # Faculty (in the same row)
         tk.Label(form_frame, text="Faculty:", font=("Courier New", 18), fg="white", bg="#131f24").grid(row=3, column=0, padx=10, pady=5, sticky=tk.W)
-        self.receiver_faculty_combobox = ttk.Combobox(form_frame, font=("Courier New", 18), width=40, state="readonly", values=[ 
+        self.receiver_faculty_combobox = ttk.Combobox(form_frame, font=("Courier New", 18), width=38, state="readonly", values=[ 
             "College of Engineering and Architecture", 
             "Institute of Computer Studies", 
             "Institute of Architecture", 
@@ -330,8 +416,6 @@ class DocuSortApp:
         )
         submit_button.grid(row=5, column=2, columnspan=2, pady=(40, 0), sticky=tk.W, padx=(200, 0))
 
-        # Bind faculty selection to update courses (optional, if needed)
-        self.receiver_faculty_combobox.bind("<<ComboboxSelected>>", self.update_receiver_courses)
 
     def submit_receiver_info(self):
         # Gather the sender's information into a variable
@@ -412,10 +496,7 @@ class DocuSortApp:
         self.go_back_to_landing_page()
 
 
-
-# Create the main Tkinter window and pass it to the DocuSortApp
-root = tk.Tk()
-app = DocuSortApp(root)
-
-# Start the Tkinter event loop
-root.mainloop()
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = DocuSortApp(root)
+    root.mainloop()

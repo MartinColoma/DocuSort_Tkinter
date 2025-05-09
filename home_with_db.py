@@ -139,7 +139,6 @@ class DocuSortApp:
         admin_button.place(relx=1.0, rely=1.0, anchor="se", x=-30, y=-50)
 
     def admin_login_page(self):
-        
         # Clear any previous widgets
         for widget in self.root.winfo_children():
             widget.destroy()
@@ -191,6 +190,7 @@ class DocuSortApp:
             activeforeground="white"  # Text color when clicked
         )
         admin_loginbtn.grid(row=5, column=1, pady=(40, 0), sticky=tk.W, padx=(110, 0))
+
     def validate_login(self):
         username = self.username_entry.get()
         password = self.password_entry.get()
@@ -199,21 +199,78 @@ class DocuSortApp:
         if not username or not password:
             messagebox.showerror("Login Failed", "Username and password cannot be empty")
             return  # Exit the function early
+        
+        try:
+            # Connect to the database
+            conn = sqlite3.connect("docusortDB.db")
+            cursor = conn.cursor()
             
-        # Then check for correct credentials
-        if username == "admin" and password == "admin123":
-            messagebox.showinfo("Login Successful", "Welcome Admin!")
+            # Check if admin_users table exists
+            cursor.execute("""
+                SELECT name FROM sqlite_master 
+                WHERE type='table' AND name='admin_users'
+            """)
             
-            # Hide the login window
-            self.root.withdraw()
+            if not cursor.fetchone():
+                # If the table doesn't exist yet, create it with a default admin user
+                cursor.execute("""
+                    CREATE TABLE admin_users (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        username TEXT UNIQUE NOT NULL,
+                        password TEXT NOT NULL,
+                        role TEXT NOT NULL,
+                        date_created TEXT NOT NULL,
+                        last_login TEXT
+                    )
+                """)
+                conn.commit()
+                
+                # Insert default admin
+                cursor.execute("""
+                    INSERT INTO admin_users (username, password, role, date_created)
+                    VALUES (?, ?, ?, datetime('now'))
+                """, ("admin", "admin123", "Super Admin"))
+                conn.commit()
             
-            # Import here to avoid circular imports
-            from admin import AdminApp
+            # Check user credentials against the database
+            cursor.execute("""
+                SELECT id, username, role FROM admin_users 
+                WHERE username = ? AND password = ?
+            """, (username, password))
             
-            admin_window = tk.Toplevel(self.root)
-            AdminApp(admin_window)
-        else:
-            messagebox.showerror("Login Failed", "Incorrect Username or Password")
+            user = cursor.fetchone()
+            
+            if user:
+                # Update last login time
+                cursor.execute("""
+                    UPDATE admin_users 
+                    SET last_login = datetime('now') 
+                    WHERE id = ?
+                """, (user[0],))
+                conn.commit()
+                
+                # Close the database connection
+                conn.close()
+                
+                # Show success message with user role
+                messagebox.showinfo("Login Successful", f"Welcome {user[1]}! ({user[2]})")
+                
+                # Hide the login window
+                self.root.withdraw()
+                
+                # Import here to avoid circular imports
+                from admin import AdminApp
+                
+                admin_window = tk.Toplevel(self.root)
+                AdminApp(admin_window)
+            else:
+                conn.close()
+                messagebox.showerror("Login Failed", "Incorrect Username or Password")
+                
+        except sqlite3.Error as e:
+            messagebox.showerror("Database Error", f"Failed to validate login: {e}")
+            if conn:
+                conn.close()
 
     def sender_info_page(self):
         # Clear any previous widgets (if any)

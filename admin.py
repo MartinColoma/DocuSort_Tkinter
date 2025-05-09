@@ -9,10 +9,33 @@ class AdminApp:
         self.page = 0
         self.items_per_page = 10
 
+        # Define color scheme for the entire application
+        self.bg_dark = "#131f24"
+        self.accent_green = "#58cc02"
+        self.text_light = "#ffffff"
+        self.text_dark = "#131f24"
+        self.secondary_bg = "#1c2b33"  # Slightly lighter than main dark for contrast
+
         self.root = tk.Toplevel(self.login_root)
         self.root.title("Admin Home Page")
         self.root.geometry("1200x700")
-        self.root.configure(bg="#131f24")
+        self.root.configure(bg=self.bg_dark)
+
+        # Configure Treeview style
+        self.style = ttk.Style()
+        self.style.theme_use("default")
+        self.style.configure("Treeview", 
+                            background=self.secondary_bg, 
+                            foreground=self.text_light, 
+                            rowheight=25,
+                            fieldbackground=self.secondary_bg)
+        self.style.configure("Treeview.Heading", 
+                            background=self.accent_green, 
+                            foreground=self.text_light,
+                            font=("Courier New", 10, "bold"))
+        self.style.map("Treeview", 
+                      background=[('selected', self.accent_green)],
+                      foreground=[('selected', self.text_light)])
 
         self.login_root.withdraw()  # Hide login window
         self.admin_home_page()
@@ -26,29 +49,30 @@ class AdminApp:
         self.root.grid_columnconfigure(1, weight=4)
 
         # Sidebar
-        sidebar_frame = tk.Frame(self.root, bg="#131f24", width=200)
+        sidebar_frame = tk.Frame(self.root, bg=self.bg_dark, width=200)
         sidebar_frame.grid(row=0, column=0, sticky="ns", padx=10, pady=10)
 
         tk.Label(sidebar_frame, text="Admin Panel", font=("Courier New", 20, "bold"),
-                 fg="#58cc02", bg="#131f24").pack(pady=30)
+                 fg=self.accent_green, bg=self.bg_dark).pack(pady=30)
 
         sidebar_buttons = [
             ("Dashboard", self.show_dashboard),
             ("Settings", self.show_settings),
             ("Reports", self.show_reports),
+            ("Admin Users", self.show_admin_users),
             ("Log Out", self.logout)
         ]
 
         for text, command in sidebar_buttons:
             button = tk.Button(
-                sidebar_frame, text=text, font=("Courier New", 16), fg="white", bg="#58cc02",
-                relief="flat", activebackground="#58cc02", activeforeground="white",
+                sidebar_frame, text=text, font=("Courier New", 16), fg=self.text_light, bg=self.accent_green,
+                relief="flat", activebackground=self.accent_green, activeforeground=self.text_light,
                 command=command
             )
             button.pack(fill="x", pady=10, padx=10)
 
         # Main content area
-        self.content_frame = tk.Frame(self.root, bg="#f4f4f4")
+        self.content_frame = tk.Frame(self.root, bg=self.bg_dark)
         self.content_frame.grid(row=0, column=1, sticky="nsew", padx=10, pady=10)
 
         self.show_dashboard()  # Show dashboard by default
@@ -61,12 +85,12 @@ class AdminApp:
             self.content_frame,
             text="Dashboard - Recent Documents",
             font=("Courier New", 18, "bold"),
-            bg="#131f24",
-            fg="#fff"
+            bg=self.bg_dark,
+            fg=self.text_light
         )
         title_label.pack(pady=10)
 
-        self.table_frame = tk.Frame(self.content_frame, bg="#f4f4f4")
+        self.table_frame = tk.Frame(self.content_frame, bg=self.bg_dark)
         self.table_frame.pack(padx=10, pady=10, fill="none", expand=False)
 
         columns = ("id", "sender", "student_number", "section", "course", "receiver", "datetime")
@@ -78,16 +102,22 @@ class AdminApp:
 
         self.tree.pack()
 
-        nav_frame = tk.Frame(self.content_frame, bg="#f4f4f4")
+        nav_frame = tk.Frame(self.content_frame, bg=self.bg_dark)
         nav_frame.pack(pady=10)
 
-        prev_btn = tk.Button(nav_frame, text="← Previous", command=self.prev_page,
-                             font=("Courier New", 12), bg="#58cc02", fg="white")
-        prev_btn.pack(side="left", padx=5)
+        self.prev_button = tk.Button(nav_frame, text="← Previous", command=self.prev_page,
+                                    font=("Courier New", 12), bg=self.accent_green, fg=self.text_light,
+                                    activebackground=self.secondary_bg, activeforeground=self.text_light)
+        self.prev_button.pack(side="left", padx=5)
 
-        next_btn = tk.Button(nav_frame, text="Next →", command=self.next_page,
-                             font=("Courier New", 12), bg="#58cc02", fg="white")
-        next_btn.pack(side="left", padx=5)
+        self.next_button = tk.Button(nav_frame, text="Next →", command=self.next_page,
+                                    font=("Courier New", 12), bg=self.accent_green, fg=self.text_light,
+                                    activebackground=self.secondary_bg, activeforeground=self.text_light)
+        self.next_button.pack(side="left", padx=5)
+
+        # Pagination config
+        self.page = 0
+        self.items_per_page = 10
 
         self.load_table_page()
 
@@ -97,23 +127,29 @@ class AdminApp:
 
         conn = sqlite3.connect("docusortDB.db")
         cursor = conn.cursor()
+
+        # Get total count for pagination logic
         cursor.execute("SELECT COUNT(*) FROM documents")
         total_rows = cursor.fetchone()[0]
 
         offset = self.page * self.items_per_page
         cursor.execute("""
             SELECT id, sender_fname || ' ' || sender_surname, studnum,
-                   sender_section, sender_course,
-                   rcvr_fname || ' ' || rcvr_surname, datetime
+                sender_section, sender_course,
+                rcvr_fname || ' ' || rcvr_surname, datetime
             FROM documents
             ORDER BY datetime DESC
             LIMIT ? OFFSET ?
-        """, (self.items_per_page, offset))
+        """, (10, offset))  # Always load exactly 10 rows
         rows = cursor.fetchall()
         conn.close()
 
         for row in rows:
             self.tree.insert("", "end", values=row)
+
+        # Disable/enable buttons based on page
+        self.prev_button.config(state="disabled" if self.page == 0 else "normal")
+        self.next_button.config(state="disabled" if (self.page + 1) * self.items_per_page >= total_rows else "normal")
 
     def next_page(self):
         self.page += 1
@@ -125,25 +161,407 @@ class AdminApp:
             self.load_table_page()
 
     def show_settings(self):
-        self.update_content("Settings", "Here you can modify settings.")
+        self.update_content("Settings", "System Configuration")
+        
+        settings_container = tk.Frame(self.content_frame, bg=self.bg_dark, padx=20, pady=20)
+        settings_container.pack(fill="both", expand=True)
+        
+        # Example settings options
+        settings = [
+            ("Database Backup", "Configure automatic database backups"),
+            ("User Management", "Add or remove admin users"),
+            ("System Preferences", "Change system behavior")
+        ]
+        
+        for i, (setting_name, setting_desc) in enumerate(settings):
+            setting_frame = tk.Frame(settings_container, bg=self.secondary_bg, padx=15, pady=15)
+            setting_frame.pack(fill="x", pady=10)
+            
+            tk.Label(setting_frame, text=setting_name, font=("Courier New", 14, "bold"), 
+                    bg=self.secondary_bg, fg=self.text_light).pack(anchor="w")
+            
+            tk.Label(setting_frame, text=setting_desc, font=("Courier New", 12), 
+                    bg=self.secondary_bg, fg=self.text_light).pack(anchor="w", pady=5)
+            
+            tk.Button(setting_frame, text="Configure", bg=self.accent_green, fg=self.text_light,
+                     activebackground=self.secondary_bg, activeforeground=self.text_light).pack(anchor="e")
+
+    def show_admin_users(self):
+        for widget in self.content_frame.winfo_children():
+            widget.destroy()
+
+        title_label = tk.Label(
+            self.content_frame,
+            text="Admin User Management",
+            font=("Courier New", 18, "bold"),
+            bg=self.bg_dark,
+            fg=self.text_light
+        )
+        title_label.pack(pady=10)
+
+        # Admin users list frame
+        users_frame = tk.Frame(self.content_frame, bg=self.bg_dark)
+        users_frame.pack(padx=10, pady=10, fill="none", expand=False)
+
+        # Create admin users table
+        columns = ("id", "username", "role", "date_created", "last_login")
+        self.admin_tree = ttk.Treeview(users_frame, columns=columns, show="headings", height=8)
+
+        for col in columns:
+            self.admin_tree.heading(col, text=col.replace("_", " ").title())
+            self.admin_tree.column(col, anchor="center", width=140)
+
+        self.admin_tree.pack(pady=10)
+
+        # Load sample or actual admin users
+        self.load_admin_users()
+
+        # Button frame
+        btn_frame = tk.Frame(self.content_frame, bg=self.bg_dark)
+        btn_frame.pack(pady=10)
+
+        add_btn = tk.Button(
+            btn_frame, 
+            text="Add New Admin", 
+            command=self.show_add_admin_form,
+            font=("Courier New", 12),
+            bg=self.accent_green,
+            fg=self.text_light,
+            padx=10
+        )
+        add_btn.pack(side="left", padx=5)
+
+        delete_btn = tk.Button(
+            btn_frame, 
+            text="Delete Selected", 
+            command=self.delete_admin_user,
+            font=("Courier New", 12),
+            bg="#d9534f",  # Red color for delete
+            fg=self.text_light,
+            padx=10
+        )
+        delete_btn.pack(side="left", padx=5)
+
+    def load_admin_users(self):
+        # Clear existing items
+        for row in self.admin_tree.get_children():
+            self.admin_tree.delete(row)
+
+        try:
+            # Connect to the database
+            conn = sqlite3.connect("docusortDB.db")
+            cursor = conn.cursor()
+            
+            # Check if admin_users table exists
+            cursor.execute("""
+                SELECT name FROM sqlite_master 
+                WHERE type='table' AND name='admin_users'
+            """)
+            
+            if not cursor.fetchone():
+                # Create table if it doesn't exist
+                cursor.execute("""
+                    CREATE TABLE admin_users (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        username TEXT UNIQUE NOT NULL,
+                        password TEXT NOT NULL,
+                        role TEXT NOT NULL,
+                        date_created TEXT NOT NULL,
+                        last_login TEXT
+                    )
+                """)
+                conn.commit()
+                
+                # Insert default admin if table was just created
+                cursor.execute("""
+                    INSERT INTO admin_users (username, password, role, date_created)
+                    VALUES (?, ?, ?, datetime('now'))
+                """, ("admin", "admin123", "Super Admin"))
+                conn.commit()
+            
+            # Get admin users
+            cursor.execute("""
+                SELECT id, username, role, date_created, last_login
+                FROM admin_users
+                ORDER BY id
+            """)
+            
+            admin_users = cursor.fetchall()
+            conn.close()
+            
+            # Insert into treeview
+            for user in admin_users:
+                self.admin_tree.insert("", "end", values=user)
+                
+        except sqlite3.Error as e:
+            messagebox.showerror("Database Error", f"Failed to load admin users: {e}")
+            
+    def delete_admin_user(self):
+        selected_item = self.admin_tree.selection()
+        if not selected_item:
+            messagebox.showwarning("No Selection", "Please select an admin user to delete.", parent=self.root)
+            return
+            
+        user_id = self.admin_tree.item(selected_item[0], 'values')[0]
+        username = self.admin_tree.item(selected_item[0], 'values')[1]
+        
+        # Confirm deletion
+        confirm = messagebox.askyesno("Confirm Delete", 
+                                      f"Are you sure you want to delete admin user '{username}'?", 
+                                      parent=self.root)
+        if not confirm:
+            return
+            
+        try:
+            conn = sqlite3.connect("docusortDB.db")
+            cursor = conn.cursor()
+            
+            # Delete user
+            cursor.execute("DELETE FROM admin_users WHERE id = ?", (user_id,))
+            conn.commit()
+            conn.close()
+            
+            # Refresh the list
+            self.load_admin_users()
+            messagebox.showinfo("Success", f"Admin user '{username}' has been deleted.", parent=self.root)
+            
+        except sqlite3.Error as e:
+            messagebox.showerror("Database Error", f"Failed to delete admin user: {e}", parent=self.root)
+            
+    def show_add_admin_form(self):
+        # Create a new top-level window for the form
+        add_window = tk.Toplevel(self.root)
+        add_window.title("Add New Admin User")
+        add_window.configure(bg=self.bg_dark)
+        add_window.geometry("400x450")
+        add_window.resizable(False, False)
+        
+        # Make it modal
+        add_window.transient(self.root)
+        add_window.grab_set()
+        
+        # Form title
+        tk.Label(
+            add_window,
+            text="Register New Admin User",
+            font=("Courier New", 16, "bold"),
+            bg=self.bg_dark,
+            fg=self.accent_green
+        ).pack(pady=20)
+        
+        # Form container
+        form_frame = tk.Frame(add_window, bg=self.bg_dark, padx=30, pady=10)
+        form_frame.pack(fill="both")
+        
+        # Username
+        tk.Label(
+            form_frame,
+            text="Username:",
+            font=("Courier New", 12),
+            bg=self.bg_dark,
+            fg=self.text_light,
+            anchor="w"
+        ).pack(fill="x", pady=(10, 0))
+        
+        username_var = tk.StringVar()
+        username_entry = tk.Entry(
+            form_frame,
+            font=("Courier New", 12),
+            bg=self.secondary_bg,
+            fg=self.text_light,
+            insertbackground=self.text_light,
+            textvariable=username_var
+        )
+        username_entry.pack(fill="x", pady=(0, 10))
+        
+        # Password
+        tk.Label(
+            form_frame,
+            text="Password:",
+            font=("Courier New", 12),
+            bg=self.bg_dark,
+            fg=self.text_light,
+            anchor="w"
+        ).pack(fill="x", pady=(10, 0))
+        
+        password_var = tk.StringVar()
+        password_entry = tk.Entry(
+            form_frame,
+            font=("Courier New", 12),
+            bg=self.secondary_bg,
+            fg=self.text_light,
+            insertbackground=self.text_light,
+            textvariable=password_var,
+            show="*"
+        )
+        password_entry.pack(fill="x", pady=(0, 10))
+        
+        # Confirm Password
+        tk.Label(
+            form_frame,
+            text="Confirm Password:",
+            font=("Courier New", 12),
+            bg=self.bg_dark,
+            fg=self.text_light,
+            anchor="w"
+        ).pack(fill="x", pady=(10, 0))
+        
+        confirm_var = tk.StringVar()
+        confirm_entry = tk.Entry(
+            form_frame,
+            font=("Courier New", 12),
+            bg=self.secondary_bg,
+            fg=self.text_light,
+            insertbackground=self.text_light,
+            textvariable=confirm_var,
+            show="*"
+        )
+        confirm_entry.pack(fill="x", pady=(0, 10))
+        
+        # Role
+        tk.Label(
+            form_frame,
+            text="Role:",
+            font=("Courier New", 12),
+            bg=self.bg_dark,
+            fg=self.text_light,
+            anchor="w"
+        ).pack(fill="x", pady=(10, 0))
+        
+        role_var = tk.StringVar(value="Admin")
+        roles = ["Admin", "Super Admin", "Viewer"]
+        role_dropdown = ttk.Combobox(
+            form_frame,
+            font=("Courier New", 12),
+            textvariable=role_var,
+            values=roles,
+            state="readonly"
+        )
+        role_dropdown.pack(fill="x", pady=(0, 20))
+        
+        # Button frame
+        button_frame = tk.Frame(add_window, bg=self.bg_dark, pady=10)
+        button_frame.pack()
+        
+        # Register button
+        register_btn = tk.Button(
+            button_frame,
+            text="Register Admin",
+            font=("Courier New", 12, "bold"),
+            bg=self.accent_green,
+            fg=self.text_light,
+            padx=15,
+            pady=5,
+            command=lambda: self.register_admin(
+                username_var.get(),
+                password_var.get(),
+                confirm_var.get(),
+                role_var.get(),
+                add_window
+            )
+        )
+        register_btn.pack(side="left", padx=10)
+        
+        # Cancel button
+        cancel_btn = tk.Button(
+            button_frame,
+            text="Cancel",
+            font=("Courier New", 12),
+            bg=self.secondary_bg,
+            fg=self.text_light,
+            padx=15,
+            pady=5,
+            command=add_window.destroy
+        )
+        cancel_btn.pack(side="left", padx=10)
+        
+        # Focus on the first field
+        username_entry.focus_set()
+        
+    def register_admin(self, username, password, confirm, role, window):
+        # Validate inputs
+        if not username or not password or not confirm:
+            messagebox.showerror("Error", "All fields must be filled", parent=window)
+            return
+            
+        if password != confirm:
+            messagebox.showerror("Error", "Passwords do not match", parent=window)
+            return
+            
+        if len(password) < 6:
+            messagebox.showerror("Error", "Password must be at least 6 characters", parent=window)
+            return
+            
+        try:
+            conn = sqlite3.connect("docusortDB.db")
+            cursor = conn.cursor()
+            
+            # Check if username already exists
+            cursor.execute("SELECT id FROM admin_users WHERE username = ?", (username,))
+            if cursor.fetchone():
+                messagebox.showerror("Error", "Username already exists", parent=window)
+                conn.close()
+                return
+                
+            # Insert new admin user
+            cursor.execute("""
+                INSERT INTO admin_users (username, password, role, date_created)
+                VALUES (?, ?, ?, datetime('now'))
+            """, (username, password, role))
+            
+            conn.commit()
+            conn.close()
+            
+            messagebox.showinfo("Success", "New admin user registered successfully", parent=window)
+            window.destroy()
+            
+            # Refresh the admin users list
+            self.load_admin_users()
+            
+        except sqlite3.Error as e:
+            messagebox.showerror("Database Error", f"Failed to register admin: {e}", parent=window)
 
     def show_reports(self):
-        self.update_content("Reports", "Here are the reports.")
+        self.update_content("Reports", "Analytics Dashboard")
+        
+        reports_container = tk.Frame(self.content_frame, bg=self.bg_dark, padx=20, pady=20)
+        reports_container.pack(fill="both", expand=True)
+        
+        # Example report options
+        reports = [
+            ("Document Traffic", "View document submission statistics"),
+            ("User Activity", "Monitor system usage"),
+            ("Error Logs", "Review system errors and warnings")
+        ]
+        
+        for i, (report_name, report_desc) in enumerate(reports):
+            report_frame = tk.Frame(reports_container, bg=self.secondary_bg, padx=15, pady=15)
+            report_frame.pack(fill="x", pady=10)
+            
+            tk.Label(report_frame, text=report_name, font=("Courier New", 14, "bold"), 
+                    bg=self.secondary_bg, fg=self.text_light).pack(anchor="w")
+            
+            tk.Label(report_frame, text=report_desc, font=("Courier New", 12), 
+                    bg=self.secondary_bg, fg=self.text_light).pack(anchor="w", pady=5)
+            
+            tk.Button(report_frame, text="Generate Report", bg=self.accent_green, fg=self.text_light,
+                     activebackground=self.secondary_bg, activeforeground=self.text_light).pack(anchor="e")
 
     def update_content(self, title, message):
         for widget in self.content_frame.winfo_children():
             widget.destroy()
 
         title_label = tk.Label(self.content_frame, text=title,
-                               font=("Courier New", 18, "bold"), bg="#f4f4f4", fg="#131f24")
+                               font=("Courier New", 18, "bold"), bg=self.bg_dark, fg=self.text_light)
         title_label.pack(pady=20)
 
         message_label = tk.Label(self.content_frame, text=message,
-                                 font=("Courier New", 14), bg="#f4f4f4", fg="#131f24")
+                                 font=("Courier New", 14), bg=self.bg_dark, fg=self.text_light)
         message_label.pack(pady=10)
 
     def logout(self):
-        confirm = messagebox.askyesno("Confirm Logout", "Are you sure you want to log out?")
+        confirm = messagebox.askyesno("Confirm Logout", "Are you sure you want to log out?", 
+                                      parent=self.root)
         if confirm:
             print("Logging out and going back to login page")
             self.root.destroy()  # Close admin window
@@ -153,8 +571,6 @@ class AdminApp:
             DocuSortApp(login_window)
         else:
             print("Logout canceled.")
-
-
 
 
 if __name__ == "__main__":

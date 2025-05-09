@@ -3,6 +3,7 @@ from tkinter import ttk, messagebox
 from PIL import Image, ImageTk
 import sqlite3
 from datetime import datetime
+import sys
 
 
 # Create the main application window
@@ -34,6 +35,12 @@ class DocuSortApp:
 
         # Landing page
         self.landing_page()
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+
+    def on_closing(self):
+        if messagebox.askokcancel("Quit", "Do you really want to quit?"):
+            self.root.destroy()
+            sys.exit()  # Ensures the process is completely terminated
 
     def initialize_database(self):
         conn = sqlite3.connect('docusortDB.db')
@@ -201,10 +208,10 @@ class DocuSortApp:
             self.root.withdraw()
             
             # Import here to avoid circular imports
-            from admin import AdminHomePage
+            from admin import AdminApp
             
             admin_window = tk.Toplevel(self.root)
-            AdminHomePage(admin_window)
+            AdminApp(admin_window)
         else:
             messagebox.showerror("Login Failed", "Incorrect Username or Password")
 

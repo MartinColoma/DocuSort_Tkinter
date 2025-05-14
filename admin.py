@@ -18,7 +18,9 @@ class AdminApp:
 
         self.root = tk.Toplevel(self.login_root)
         self.root.title("Admin Home Page")
-        self.root.geometry("1200x700")
+        self.root.resizable(False, False)
+        self.root.geometry(f"{self.root.winfo_screenwidth()}x{self.root.winfo_screenheight()}+0+0")
+       
         self.root.configure(bg=self.bg_dark)
 
         # Configure Treeview style

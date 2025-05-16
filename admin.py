@@ -18,8 +18,12 @@ class AdminApp:
 
         self.root = tk.Toplevel(self.login_root)
         self.root.title("Admin Home Page")
-        self.root.resizable(False, False)
-        self.root.geometry(f"{self.root.winfo_screenwidth()}x{self.root.winfo_screenheight()}+0+0")
+        self.root.attributes('-fullscreen', True)
+        # Bind Escape key to exit fullscreen
+        self.root.bind("<Escape>", self.exit_fullscreen)
+        # Bind F or f key to re-enter fullscreen
+        self.root.bind("<f>", self.toggle_fullscreen)
+        self.root.bind("<F>", self.toggle_fullscreen)
        
         self.root.configure(bg=self.bg_dark)
 
@@ -42,7 +46,13 @@ class AdminApp:
         self.login_root.withdraw()  # Hide login window
         self.admin_home_page()
         self.root.protocol("WM_DELETE_WINDOW", self.logout)
+    
+    def toggle_fullscreen(self, event=None):
+        self.root.attributes("-fullscreen", True)
 
+    def exit_fullscreen(self, event=None):
+        self.root.attributes("-fullscreen", False)
+        
     def admin_home_page(self):
         for widget in self.root.winfo_children():
             widget.destroy()
@@ -59,8 +69,8 @@ class AdminApp:
 
         sidebar_buttons = [
             ("Dashboard", self.show_dashboard),
-            ("Settings", self.show_settings),
-            ("Reports", self.show_reports),
+            # ("Settings", self.show_settings),
+            # ("Reports", self.show_reports),
             ("Admin Users", self.show_admin_users),
             ("Log Out", self.logout)
         ]

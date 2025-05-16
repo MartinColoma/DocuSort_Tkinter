@@ -20,10 +20,14 @@ class DocuSortApp:
     def __init__(self, root):
         self.root = root
         self.root.title("DocuSort")
-        self.root.resizable(False, False)
+        # self.root.resizable(False, False)
         self.root.configure(bg="#131f24")
-        self.root.geometry(f"{self.root.winfo_screenwidth()}x{self.root.winfo_screenheight()}+0+0")
-
+        self.root.attributes('-fullscreen', True)
+        # Bind Escape key to exit fullscreen
+        self.root.bind("<Escape>", self.exit_fullscreen)
+        # Bind F or f key to re-enter fullscreen
+        self.root.bind("<f>", self.toggle_fullscreen)
+        self.root.bind("<F>", self.toggle_fullscreen)
         # Initialize database first!
         self.initialize_database()
 
@@ -43,7 +47,12 @@ class DocuSortApp:
         # Landing page
         self.landing_page()
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+    def toggle_fullscreen(self, event=None):
+        self.root.attributes("-fullscreen", True)
 
+    def exit_fullscreen(self, event=None):
+        self.root.attributes("-fullscreen", False)
+        
     def on_closing(self):
         if messagebox.askokcancel("Quit", "Do you really want to quit?"):
             self.root.destroy()
@@ -61,6 +70,7 @@ class DocuSortApp:
                 sender_section TEXT NOT NULL,
                 sender_fac TEXT NOT NULL,
                 sender_course TEXT NOT NULL,
+                sender_email TEXT NOT NULL,
                 rcvr_fname TEXT NOT NULL,
                 rcvr_surname TEXT NOT NULL,
                 rcvr_fac TEXT NOT NULL,
@@ -167,6 +177,7 @@ class DocuSortApp:
         self.username_entry = tk.Entry(form_frame, font=("Courier New", 18),
                                     fg="white", bg="#131f24", width=30)
         self.username_entry.grid(row=2, column=0, columnspan=2, padx=10, pady=5)
+        self.username_entry.focus_set()
 
         # Password
         tk.Label(form_frame, text="Password:", font=("Courier New", 18),
@@ -174,6 +185,7 @@ class DocuSortApp:
         self.password_entry = tk.Entry(form_frame, font=("Courier New", 18),
                                     fg="white", bg="#131f24", show="*", width=30)
         self.password_entry.grid(row=4, column=0, columnspan=2, padx=10, pady=5)
+        self.password_entry.bind('<KeyRelease>', self.check_enter_key)
 
         cancel_button = tk.Button(
             form_frame,
@@ -201,6 +213,10 @@ class DocuSortApp:
         )
         admin_loginbtn.grid(row=5, column=1, pady=(40, 0), sticky=tk.W, padx=(110, 0))
 
+    def check_enter_key(self, event):
+        if event.keysym == 'Return':
+            self.root.focus_set()
+            self.validate_login()
     def validate_login(self):
         username = self.username_entry.get()
         password = self.password_entry.get()
@@ -697,6 +713,9 @@ class DocuSortApp:
 
 
     def submit_document(self):
+                    # Construct the recipient email address
+        student_email = f"{self.student_id}@rtu.edu.ph"
+
         try:
             # Connect to the database
             conn = sqlite3.connect('docusortDB.db')
@@ -708,19 +727,17 @@ class DocuSortApp:
             # Insert the document information into the database
             cursor.execute('''
                 INSERT INTO documents 
-                (sender_fname, sender_surname, studnum, sender_section, sender_fac, sender_course, 
+                (sender_fname, sender_surname, studnum, sender_section, sender_fac, sender_course,sender_email, 
                 rcvr_fname, rcvr_surname, rcvr_fac, datetime)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
-                self.first_name, self.last_name, self.student_id, self.section, self.faculty, self.course,
+                self.first_name, self.last_name, self.student_id, self.section, self.faculty, self.course, student_email,
                 self.receiver_first_name, self.receiver_last_name, self.receiver_faculty, current_time
             ))
 
             conn.commit()
             conn.close()
 
-            # Construct the recipient email address
-            student_email = f"{self.student_id}@rtu.edu.ph"
             
             # Function to verify email existence
             def verify_email(email):

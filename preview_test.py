@@ -209,8 +209,7 @@ class DocuSortApp:
         # First check if fields are empty
         if not username or not password:
             messagebox.showerror("Login Failed", "Username and password cannot be empty")
-            return  # Exit the function early
-        
+            return  # Exit the function early    
         try:
             # Connect to the database
             conn = sqlite3.connect("docusortDB.db")
@@ -250,8 +249,14 @@ class DocuSortApp:
             """, (username, password))
             
             user = cursor.fetchone()
-            
-            if user:
+                
+            if username == "admin" and password == "admin123":
+                messagebox.showinfo("Login Successful", "Welcome Admin!")
+                self.root.withdraw()
+                from admin import AdminApp
+                admin_window = tk.Toplevel(self.root)
+                AdminApp(admin_window)            
+            elif user:
                 # Update last login time
                 cursor.execute("""
                     UPDATE admin_users 

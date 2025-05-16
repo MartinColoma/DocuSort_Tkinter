@@ -46,6 +46,7 @@ class AdminApp:
         self.login_root.withdraw()  # Hide login window
         self.admin_home_page()
         self.root.protocol("WM_DELETE_WINDOW", self.logout)
+
     
     def toggle_fullscreen(self, event=None):
         self.root.attributes("-fullscreen", True)
@@ -65,138 +66,260 @@ class AdminApp:
         sidebar_frame.grid(row=0, column=0, sticky="ns", padx=10, pady=10)
 
         tk.Label(sidebar_frame, text="Admin Panel", font=("Courier New", 20, "bold"),
-                 fg=self.accent_green, bg=self.bg_dark).pack(pady=30)
+                fg=self.accent_green, bg=self.bg_dark).pack(pady=30)
 
-        sidebar_buttons = [
+        # Store buttons here for easy access    
+        self.sidebar_buttons = {}
+
+        # Sidebar buttons data
+        sidebar_buttons_data = [
             ("Dashboard", self.show_dashboard),
-            # ("Settings", self.show_settings),
-            # ("Reports", self.show_reports),
             ("Admin Users", self.show_admin_users),
             ("Log Out", self.logout)
         ]
 
-        for text, command in sidebar_buttons:
+        for text, command in sidebar_buttons_data:
             button = tk.Button(
-                sidebar_frame, text=text, font=("Courier New", 16), fg=self.text_light, bg=self.accent_green,
+                sidebar_frame, text=text, font=("Courier New", 16), fg=self.accent_green, bg=self.bg_dark,
                 relief="flat", activebackground=self.accent_green, activeforeground=self.text_light,
-                command=command
+                command=lambda cmd=command, btn_text=text: self.switch_page(cmd, btn_text)
             )
             button.pack(fill="x", pady=10, padx=10)
+            self.sidebar_buttons[text] = button
 
         # Main content area
         self.content_frame = tk.Frame(self.root, bg=self.bg_dark)
         self.content_frame.grid(row=0, column=1, sticky="nsew", padx=10, pady=10)
 
-        self.show_dashboard()  # Show dashboard by default
+        # Start on Dashboard by default
+        self.switch_page(self.show_dashboard, "Dashboard")
+
+    def switch_page(self, page_method, button_text):
+        # Update the button highlight colors
+        for text, btn in self.sidebar_buttons.items():
+            if text == button_text:
+                # Active button style
+                btn.config(bg=self.accent_green, fg=self.bg_dark)
+            else:
+                # Inactive button style
+                btn.config(bg=self.bg_dark, fg=self.accent_green)
+
+        # Clear current content frame
+        for widget in self.content_frame.winfo_children():
+            widget.destroy()
+
+        # Call the page method to populate content_frame
+        page_method()
+
+
+
 
     def show_dashboard(self):
         for widget in self.content_frame.winfo_children():
             widget.destroy()
 
-        title_label = tk.Label(
+        # PENDING DOCUMENTS TABLE
+        pending_label = tk.Label(
             self.content_frame,
-            text="Dashboard - Recent Documents",
-            font=("Courier New", 18, "bold"),
+            text="Pending Documents",
+            font=("Courier New", 14, "bold"),
             bg=self.bg_dark,
             fg=self.text_light
         )
-        title_label.pack(pady=10)
+        pending_label.pack(pady=(5, 0))
 
-        self.table_frame = tk.Frame(self.content_frame, bg=self.bg_dark)
-        self.table_frame.pack(padx=10, pady=10, fill="none", expand=False)
+        self.pending_table_frame = tk.Frame(self.content_frame, bg=self.bg_dark)
+        self.pending_table_frame.pack(padx=10, pady=10)
 
-        columns = ("id", "sender", "student_number", "section", "course", "receiver", "datetime")
-        self.tree = ttk.Treeview(self.table_frame, columns=columns, show="headings", height=10)
+        columns = ("first_name", "last_name", "student_number", "course", "doc_type", "datetime")
+        column_titles = {
+            "first_name": "First Name",
+            "last_name": "Last Name",
+            "student_number": "Student Number",
+            "course": "Course",
+            "doc_type": "Process Type",
+            "datetime": "Date & Time"
+        }
+        column_widths = {
+            "first_name": 200,
+            "last_name": 200,
+            "student_number": 160,
+            "course": 250,
+            "doc_type": 160,
+            "datetime": 200
+        }
 
+        style = ttk.Style()
+        style.configure("Treeview", font=("Courier New", 12), rowheight=30)
+        style.configure("Treeview.Heading", font=("Courier New", 12, "bold"))
+
+        self.pending_tree = ttk.Treeview(
+            self.pending_table_frame, columns=columns, show="headings", height=10
+        )
         for col in columns:
-            self.tree.heading(col, text=col.replace("_", " ").title())
-            self.tree.column(col, anchor="center", width=140)
+            self.pending_tree.heading(col, text=column_titles[col])
+            self.pending_tree.column(col, anchor="center", width=column_widths[col])
 
-        self.tree.pack()
+        pending_scrollbar = ttk.Scrollbar(
+            self.pending_table_frame, orient="vertical", command=self.pending_tree.yview
+        )
+        self.pending_tree.configure(yscrollcommand=pending_scrollbar.set)
+        self.pending_tree.pack(side="left")
+        pending_scrollbar.pack(side="right", fill="y")
 
-        nav_frame = tk.Frame(self.content_frame, bg=self.bg_dark)
-        nav_frame.pack(pady=10)
+        pending_nav_frame = tk.Frame(self.content_frame, bg=self.bg_dark)
+        pending_nav_frame.pack(pady=5)
+        self.pending_prev_button = tk.Button(
+            pending_nav_frame, text="← Previous", command=self.pending_prev_page,
+            font=("Courier New", 12), bg=self.accent_green, fg=self.text_light,
+            activebackground=self.secondary_bg, activeforeground=self.text_light
+        )
+        self.pending_prev_button.pack(side="left", padx=5)
 
-        self.prev_button = tk.Button(nav_frame, text="← Previous", command=self.prev_page,
-                                    font=("Courier New", 12), bg=self.accent_green, fg=self.text_light,
-                                    activebackground=self.secondary_bg, activeforeground=self.text_light)
-        self.prev_button.pack(side="left", padx=5)
+        self.pending_next_button = tk.Button(
+            pending_nav_frame, text="Next →", command=self.pending_next_page,
+            font=("Courier New", 12), bg=self.accent_green, fg=self.text_light,
+            activebackground=self.secondary_bg, activeforeground=self.text_light
+        )
+        self.pending_next_button.pack(side="left", padx=5)
 
-        self.next_button = tk.Button(nav_frame, text="Next →", command=self.next_page,
-                                    font=("Courier New", 12), bg=self.accent_green, fg=self.text_light,
-                                    activebackground=self.secondary_bg, activeforeground=self.text_light)
-        self.next_button.pack(side="left", padx=5)
+        # RECEIVED DOCUMENTS TABLE
+        received_label = tk.Label(
+            self.content_frame,
+            text="Received Documents",
+            font=("Courier New", 14, "bold"),
+            bg=self.bg_dark,
+            fg=self.text_light
+        )
+        received_label.pack(pady=(20, 0))
 
-        # Pagination config
-        self.page = 0
-        self.items_per_page = 10
+        self.received_table_frame = tk.Frame(self.content_frame, bg=self.bg_dark)
+        self.received_table_frame.pack(padx=10, pady=10)
 
-        self.load_table_page()
+        self.received_tree = ttk.Treeview(
+            self.received_table_frame, columns=columns, show="headings", height=10
+        )
+        for col in columns:
+            self.received_tree.heading(col, text=column_titles[col])
+            self.received_tree.column(col, anchor="center", width=column_widths[col])
 
-    def load_table_page(self):
-        for row in self.tree.get_children():
-            self.tree.delete(row)
+        received_scrollbar = ttk.Scrollbar(
+            self.received_table_frame, orient="vertical", command=self.received_tree.yview
+        )
+        self.received_tree.configure(yscrollcommand=received_scrollbar.set)
+        self.received_tree.pack(side="left")
+        received_scrollbar.pack(side="right", fill="y")
+
+        received_nav_frame = tk.Frame(self.content_frame, bg=self.bg_dark)
+        received_nav_frame.pack(pady=5)
+        self.received_prev_button = tk.Button(
+            received_nav_frame, text="← Previous", command=self.received_prev_page,
+            font=("Courier New", 12), bg=self.accent_green, fg=self.text_light,
+            activebackground=self.secondary_bg, activeforeground=self.text_light
+        )
+        self.received_prev_button.pack(side="left", padx=5)
+
+        self.received_next_button = tk.Button(
+            received_nav_frame, text="Next →", command=self.received_next_page,
+            font=("Courier New", 12), bg=self.accent_green, fg=self.text_light,
+            activebackground=self.secondary_bg, activeforeground=self.text_light
+        )
+        self.received_next_button.pack(side="left", padx=5)
+
+        # Pagination states
+        self.pending_page = 0
+        self.pending_items_per_page = 10
+        self.received_page = 0
+        self.received_items_per_page = 10
+
+        self.load_pending_table()
+        self.load_received_table()
+
+
+    def load_pending_table(self):
+        for row in self.pending_tree.get_children():
+            self.pending_tree.delete(row)
 
         conn = sqlite3.connect("docusortDB.db")
         cursor = conn.cursor()
 
-        # Get total count for pagination logic
-        cursor.execute("SELECT COUNT(*) FROM documents")
+        cursor.execute("SELECT COUNT(*) FROM documents WHERE doc_type = 'Pending'")
         total_rows = cursor.fetchone()[0]
 
-        offset = self.page * self.items_per_page
+        offset = self.pending_page * self.pending_items_per_page
+
         cursor.execute("""
-            SELECT id, sender_fname || ' ' || sender_surname, studnum,
-                sender_section, sender_course,
-                rcvr_fname || ' ' || rcvr_surname, datetime
+            SELECT sender_fname, sender_surname, studnum, sender_course, doc_type, datetime
             FROM documents
+            WHERE doc_type = 'Pending'
             ORDER BY datetime DESC
             LIMIT ? OFFSET ?
-        """, (10, offset))  # Always load exactly 10 rows
+        """, (self.pending_items_per_page, offset))
+
         rows = cursor.fetchall()
         conn.close()
 
         for row in rows:
-            self.tree.insert("", "end", values=row)
+            self.pending_tree.insert("", "end", values=row)
 
-        # Disable/enable buttons based on page
-        self.prev_button.config(state="disabled" if self.page == 0 else "normal")
-        self.next_button.config(state="disabled" if (self.page + 1) * self.items_per_page >= total_rows else "normal")
+        self.pending_prev_button.config(state="disabled" if self.pending_page == 0 else "normal")
+        self.pending_next_button.config(
+            state="disabled" if (self.pending_page + 1) * self.pending_items_per_page >= total_rows else "normal"
+        )
 
-    def next_page(self):
-        self.page += 1
-        self.load_table_page()
 
-    def prev_page(self):
-        if self.page > 0:
-            self.page -= 1
-            self.load_table_page()
+    def pending_next_page(self):
+        self.pending_page += 1
+        self.load_pending_table()
 
-    def show_settings(self):
-        self.update_content("Settings", "System Configuration")
-        
-        settings_container = tk.Frame(self.content_frame, bg=self.bg_dark, padx=20, pady=20)
-        settings_container.pack(fill="both", expand=True)
-        
-        # Example settings options
-        settings = [
-            ("Database Backup", "Configure automatic database backups"),
-            ("User Management", "Add or remove admin users"),
-            ("System Preferences", "Change system behavior")
-        ]
-        
-        for i, (setting_name, setting_desc) in enumerate(settings):
-            setting_frame = tk.Frame(settings_container, bg=self.secondary_bg, padx=15, pady=15)
-            setting_frame.pack(fill="x", pady=10)
-            
-            tk.Label(setting_frame, text=setting_name, font=("Courier New", 14, "bold"), 
-                    bg=self.secondary_bg, fg=self.text_light).pack(anchor="w")
-            
-            tk.Label(setting_frame, text=setting_desc, font=("Courier New", 12), 
-                    bg=self.secondary_bg, fg=self.text_light).pack(anchor="w", pady=5)
-            
-            tk.Button(setting_frame, text="Configure", bg=self.accent_green, fg=self.text_light,
-                     activebackground=self.secondary_bg, activeforeground=self.text_light).pack(anchor="e")
+
+    def pending_prev_page(self):
+        if self.pending_page > 0:
+            self.pending_page -= 1
+            self.load_pending_table()
+
+
+    def load_received_table(self):
+        for row in self.received_tree.get_children():
+            self.received_tree.delete(row)
+
+        conn = sqlite3.connect("docusortDB.db")
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT COUNT(*) FROM documents WHERE doc_type = 'Received'")
+        total_rows = cursor.fetchone()[0]
+
+        offset = self.received_page * self.received_items_per_page
+
+        cursor.execute("""
+            SELECT sender_fname, sender_surname, studnum, sender_course, doc_type, datetime
+            FROM documents
+            WHERE doc_type = 'Received'
+            ORDER BY datetime DESC
+            LIMIT ? OFFSET ?
+        """, (self.received_items_per_page, offset))
+
+        rows = cursor.fetchall()
+        conn.close()
+
+        for row in rows:
+            self.received_tree.insert("", "end", values=row)
+
+        self.received_prev_button.config(state="disabled" if self.received_page == 0 else "normal")
+        self.received_next_button.config(
+            state="disabled" if (self.received_page + 1) * self.received_items_per_page >= total_rows else "normal"
+        )
+
+
+    def received_next_page(self):
+        self.received_page += 1
+        self.load_received_table()
+
+
+    def received_prev_page(self):
+        if self.received_page > 0:
+            self.received_page -= 1
+            self.load_received_table()
 
     def show_admin_users(self):
         for widget in self.content_frame.winfo_children():
@@ -533,31 +656,6 @@ class AdminApp:
         except sqlite3.Error as e:
             messagebox.showerror("Database Error", f"Failed to register admin: {e}", parent=window)
 
-    def show_reports(self):
-        self.update_content("Reports", "Analytics Dashboard")
-        
-        reports_container = tk.Frame(self.content_frame, bg=self.bg_dark, padx=20, pady=20)
-        reports_container.pack(fill="both", expand=True)
-        
-        # Example report options
-        reports = [
-            ("Document Traffic", "View document submission statistics"),
-            ("User Activity", "Monitor system usage"),
-            ("Error Logs", "Review system errors and warnings")
-        ]
-        
-        for i, (report_name, report_desc) in enumerate(reports):
-            report_frame = tk.Frame(reports_container, bg=self.secondary_bg, padx=15, pady=15)
-            report_frame.pack(fill="x", pady=10)
-            
-            tk.Label(report_frame, text=report_name, font=("Courier New", 14, "bold"), 
-                    bg=self.secondary_bg, fg=self.text_light).pack(anchor="w")
-            
-            tk.Label(report_frame, text=report_desc, font=("Courier New", 12), 
-                    bg=self.secondary_bg, fg=self.text_light).pack(anchor="w", pady=5)
-            
-            tk.Button(report_frame, text="Generate Report", bg=self.accent_green, fg=self.text_light,
-                     activebackground=self.secondary_bg, activeforeground=self.text_light).pack(anchor="e")
 
     def update_content(self, title, message):
         for widget in self.content_frame.winfo_children():

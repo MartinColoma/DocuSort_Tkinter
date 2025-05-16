@@ -74,7 +74,8 @@ class DocuSortApp:
                 rcvr_fname TEXT NOT NULL,
                 rcvr_surname TEXT NOT NULL,
                 rcvr_fac TEXT NOT NULL,
-                datetime TEXT NOT NULL
+                datetime TEXT NOT NULL,
+                doc_type TEXT NOT NULL
             )
         ''')
         conn.commit()
@@ -723,16 +724,16 @@ class DocuSortApp:
 
             # Current timestamp
             current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
+            doc_type = "Pending"
             # Insert the document information into the database
             cursor.execute('''
                 INSERT INTO documents 
                 (sender_fname, sender_surname, studnum, sender_section, sender_fac, sender_course,sender_email, 
-                rcvr_fname, rcvr_surname, rcvr_fac, datetime)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                rcvr_fname, rcvr_surname, rcvr_fac, datetime, doc_type)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 self.first_name, self.last_name, self.student_id, self.section, self.faculty, self.course, student_email,
-                self.receiver_first_name, self.receiver_last_name, self.receiver_faculty, current_time
+                self.receiver_first_name, self.receiver_last_name, self.receiver_faculty, current_time, doc_type
             ))
 
             conn.commit()

@@ -897,6 +897,7 @@ class AdminApp:
             
             # Make it modal
             detail_window.transient(self.root)
+            detail_window.wait_visibility()
             detail_window.grab_set()
             
             # Create scrollable frame for content

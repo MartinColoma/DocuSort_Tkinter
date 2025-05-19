@@ -38,11 +38,11 @@ class AdminApp:
                             fieldbackground=self.secondary_bg)
         self.style.configure("Treeview.Heading", 
                             background=self.accent_green, 
-                            foreground=self.text_light,
+                            foreground=self.text_dark,
                             font=("Courier New", 10, "bold"))
         self.style.map("Treeview", 
                       background=[('selected', self.accent_green)],
-                      foreground=[('selected', self.text_light)])
+                      foreground=[('selected', self.text_dark)])
 
         self.login_root.withdraw()  # Hide login window
         self.admin_home_page()
@@ -128,7 +128,6 @@ class AdminApp:
     def show_dashboard(self):
         for widget in self.content_frame.winfo_children():
             widget.destroy()
-        
         # Welcome header
         welcome_frame = tk.Frame(self.content_frame, bg=self.bg_dark)
         welcome_frame.pack(fill="x", pady=(10, 20))
@@ -270,28 +269,26 @@ class AdminApp:
         self.received_count_label.bind("<Button-1>", lambda e: show_received_table())
         
         # Define common table properties
-        columns = ("first_name", "last_name", "student_number", "course", "doc_type", "datetime")
+        columns = ("first_name", "last_name", "student_number", "sender_fac","doc_type")
         column_titles = {
             "first_name": "First Name",
             "last_name": "Last Name",
             "student_number": "Student Number",
-            "course": "Course",
-            "doc_type": "Process Type",
-            "datetime": "Date & Time"
+            "sender_fac": "Faculty",
+            "doc_type": "Status"
         }
         column_widths = {
             "first_name": 200,
             "last_name": 200,
             "student_number": 160,
-            "course": 250,
-            "doc_type": 160,
-            "datetime": 200
+            "sender_fac": 400,
+            "doc_type": 160
         }
 
         # Updated style configuration
         style = ttk.Style()
         style.configure("Treeview", font=("Courier New", 12), rowheight=30)
-        style.configure("Treeview.Heading", font=("Courier New", 12, "bold"), anchor="center")  # Center headers
+        style.configure("Treeview.Heading", font=("Courier New", 12, "bold"), anchor="center", foreground=self.text_dark)  # Center headers
         
         # Create both table frames but only display pending by default
         
@@ -334,7 +331,7 @@ class AdminApp:
             highlightthickness=1,
             highlightbackground="#555555",
             highlightcolor=self.accent_green,
-            width=40
+            width=40,
         )
         self.pending_search_entry.pack(side="left", fill="x", expand=True)
         
@@ -351,7 +348,8 @@ class AdminApp:
             command=lambda: self.clear_search("pending")
         )
         search_clear_button.pack(side="left", padx=(5, 0))
-        
+                
+        self.add_convert_all_button()
         # Create a container for the table and scrollbar
         pending_table_container = tk.Frame(self.pending_table_frame, bg=self.bg_dark)
         pending_table_container.pack(fill="both", expand=True)
@@ -474,24 +472,24 @@ class AdminApp:
         # Create navigation frame and place it below the table
         received_nav_frame = tk.Frame(self.received_table_frame, bg=self.bg_dark)
         received_nav_frame.pack(fill="x", pady=10)
-        
+
         # Create a left spacer to push the prev button to the left
         tk.Frame(received_nav_frame, bg=self.bg_dark).pack(side="left", expand=True)
         
-        self.received_prev_button = tk.Button(
-            received_nav_frame, text="← Previous", command=self.received_prev_page,            
-            font=("Courier New", 12), bg=self.bg_dark, fg=self.text_light,
-            borderwidth=0, highlightthickness=0, relief="flat", cursor="hand2"
-        )
-        self.received_prev_button.pack(side="right", padx=10)
-
         self.received_next_button = tk.Button(
             received_nav_frame, text="Next →", command=self.received_next_page,
             font=("Courier New", 12), bg=self.bg_dark, fg=self.text_light,
             borderwidth=0, highlightthickness=0, relief="flat", cursor="hand2"
         )
         self.received_next_button.pack(side="right", padx=10)
-        
+
+        self.received_prev_button = tk.Button(
+            received_nav_frame, text="← Previous", command=self.received_prev_page,
+            font=("Courier New", 12), bg=self.bg_dark, fg=self.text_light,
+            borderwidth=0, highlightthickness=0, relief="flat", cursor="hand2"
+        )
+        self.received_prev_button.pack(side="right", padx=10)
+
         # Create a right spacer to push the next button to the right
         tk.Frame(received_nav_frame, bg=self.bg_dark).pack(side="left", expand=True)
 
@@ -510,16 +508,126 @@ class AdminApp:
         # Show pending table by default (initial state)
         show_pending_table()
         
+                # In the show_dashboard method, after creating the pending_tree:
+        self.pending_tree.bind("<Double-1>", lambda event: self.show_document_details("pending"))
+
+        # In the show_dashboard method, after creating the received_tree:
+        self.received_tree.bind("<Double-1>", lambda event: self.show_document_details("received"))
+        
+        self.create_table_context_menu()
+
+    def add_convert_all_button(self):
+        """Add a button to convert all pending documents to received"""
+        # Create a button frame between the search bar and the table
+        button_frame = tk.Frame(self.pending_table_frame, bg=self.bg_dark)
+        button_frame.pack(fill="x", pady=(5, 10))
+        
+        # Create left-aligned label explaining the button's purpose
+        info_label = tk.Label(
+            button_frame,
+            text="Quick Actions:",
+            font=("Courier New", 12),
+            bg=self.bg_dark,
+            fg=self.text_light
+        )
+        info_label.pack(side="left", padx=10)
+        
+        # Create the Convert All button
+        convert_all_btn = tk.Button(
+            button_frame,
+            text="Mark ALL Pending as Received",
+            font=("Courier New", 12, "bold"),
+            bg="#1976d2",  # Blue for receive
+            fg=self.text_light,
+            padx=15,
+            pady=5,
+            relief="flat",
+            cursor="hand2",
+            command=self.convert_all_pending_to_received
+        )
+        convert_all_btn.pack(side="left", padx=10)
+
+    def convert_all_pending_to_received(self):
+        """Convert all pending documents to received status"""
+        try:
+            # First, count how many documents will be affected
+            conn = sqlite3.connect("docusortDB.db")
+            cursor = conn.cursor()
+            
+            cursor.execute("SELECT COUNT(*) FROM documents WHERE doc_type = 'Pending'")
+            pending_count = cursor.fetchone()[0]
+            
+            if pending_count == 0:
+                messagebox.showinfo("No Documents", "There are no pending documents to convert.", parent=self.root)
+                conn.close()
+                return
+            
+            # Confirm before proceeding with bulk update
+            confirm = messagebox.askyesno(
+                "Confirm Action", 
+                f"Are you sure you want to mark ALL {pending_count} pending documents as received?", 
+                parent=self.root
+            )
+            
+            if not confirm:
+                conn.close()
+                return
+            
+            # Update all pending documents
+            cursor.execute("UPDATE documents SET doc_type = 'Received' WHERE doc_type = 'Pending'")
+            conn.commit()
+            
+            # Get new counts
+            cursor.execute("SELECT COUNT(*) FROM documents WHERE doc_type = 'Pending'")
+            new_pending_count = cursor.fetchone()[0]
+            
+            cursor.execute("SELECT COUNT(*) FROM documents WHERE doc_type = 'Received'")
+            new_received_count = cursor.fetchone()[0]
+            
+            conn.close()
+            
+            # Show success message
+            messagebox.showinfo(
+                "Success", 
+                f"All pending documents have been marked as received. \n\nDocuments processed: {pending_count}", 
+                parent=self.root
+            )
+            
+            # Refresh both tables
+            self.pending_page = 0  # Reset to first page
+            self.received_page = 0  # Reset to first page
+            self.load_pending_table()
+            self.load_received_table()
+            
+            # Update the count labels
+            self.pending_count_label.config(text=str(new_pending_count))
+            self.received_count_label.config(text=str(new_received_count))
+            
+        except sqlite3.Error as e:
+            messagebox.showerror("Database Error", f"Failed to update documents: {e}", parent=self.root)  
+        
     def load_pending_table(self):
         # Clear the existing table
         for row in self.pending_tree.get_children():
             self.pending_tree.delete(row)
-
+        
         conn = sqlite3.connect("docusortDB.db")
         cursor = conn.cursor()
-
+        
+        # Always refresh the cached data to ensure it's up to date
+        cursor.execute("""
+            SELECT sender_fname, sender_surname, studnum, sender_fac, doc_type, datetime
+            FROM documents
+            WHERE doc_type = 'Pending'
+            ORDER BY datetime DESC
+        """)
+        self.pending_all_data = cursor.fetchall()
+        
         # If search is active, we'll display from our filtered data
         if self.pending_search_active:
+            # Re-filter the data based on current search criteria
+            self.filter_pending_data(self.pending_search_var.get().lower())
+            
             # Display the current page of filtered data
             start_idx = self.pending_page * self.pending_items_per_page
             end_idx = start_idx + self.pending_items_per_page
@@ -527,42 +635,23 @@ class AdminApp:
             
             for row in page_data:
                 self.pending_tree.insert("", "end", values=row)
-                
+            
             # Update pagination buttons
             total_rows = len(self.pending_filtered_data)
         else:
-            # Fetch all data if it's our first load or if search was just cleared
-            if not hasattr(self, 'pending_all_data') or not self.pending_all_data:
-                cursor.execute("""
-                    SELECT sender_fname, sender_surname, studnum, sender_course, doc_type, datetime
-                    FROM documents
-                    WHERE doc_type = 'Pending'
-                    ORDER BY datetime DESC
-                """)
-                self.pending_all_data = cursor.fetchall()
-            
             # Count for pagination
-            cursor.execute("SELECT COUNT(*) FROM documents WHERE doc_type = 'Pending'")
-            total_rows = cursor.fetchone()[0]
+            total_rows = len(self.pending_all_data)
             
             # Get the current page of data
-            offset = self.pending_page * self.pending_items_per_page
+            start_idx = self.pending_page * self.pending_items_per_page
+            end_idx = start_idx + self.pending_items_per_page
+            page_data = self.pending_all_data[start_idx:end_idx]
             
-            cursor.execute("""
-                SELECT sender_fname, sender_surname, studnum, sender_course, doc_type, datetime
-                FROM documents
-                WHERE doc_type = 'Pending'
-                ORDER BY datetime DESC
-                LIMIT ? OFFSET ?
-            """, (self.pending_items_per_page, offset))
-            
-            rows = cursor.fetchall()
-            
-            for row in rows:
+            for row in page_data:
                 self.pending_tree.insert("", "end", values=row)
-
+        
         conn.close()
-
+        
         # Update pagination buttons
         self.pending_prev_button.config(state="disabled" if self.pending_page == 0 else "normal")
         self.pending_next_button.config(
@@ -594,7 +683,7 @@ class AdminApp:
             # Fetch all data if it's our first load or if search was just cleared
             if not hasattr(self, 'received_all_data') or not self.received_all_data:
                 cursor.execute("""
-                    SELECT sender_fname, sender_surname, studnum, sender_course, doc_type, datetime
+                    SELECT sender_fname, sender_surname, studnum, sender_fac, doc_type, datetime
                     FROM documents
                     WHERE doc_type = 'Received'
                     ORDER BY datetime DESC
@@ -609,7 +698,7 @@ class AdminApp:
             offset = self.received_page * self.received_items_per_page
             
             cursor.execute("""
-                SELECT sender_fname, sender_surname, studnum, sender_course, doc_type, datetime
+                SELECT sender_fname, sender_surname, studnum, sender_fac, doc_type, datetime
                 FROM documents
                 WHERE doc_type = 'Received'
                 ORDER BY datetime DESC
@@ -650,6 +739,15 @@ class AdminApp:
             self.received_page -= 1
             self.load_received_table()
 
+    def filter_pending_data(self, search_text):
+        """Helper method to filter pending data based on search text"""
+        self.pending_filtered_data = []
+        for row in self.pending_all_data:
+            # Convert all fields to strings for searching
+            row_string = ' '.join([str(item).lower() for item in row])
+            if search_text in row_string:
+                self.pending_filtered_data.append(row)
+
     def search_pending_documents(self, search_var):
         """Filter pending documents based on search text"""
         search_text = search_var.get().lower()
@@ -660,12 +758,12 @@ class AdminApp:
             self.load_pending_table()
             return
         
-        # Make sure we have all data to search through
-        if not hasattr(self, 'pending_all_data') or not self.pending_all_data:
+        # Make sure pending_all_data is up to date
+        if not hasattr(self, 'pending_all_data') or self.pending_all_data is None:
             conn = sqlite3.connect("docusortDB.db")
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT sender_fname, sender_surname, studnum, sender_course, doc_type, datetime
+                SELECT sender_fname, sender_surname, studnum, sender_fac, doc_type, datetime
                 FROM documents
                 WHERE doc_type = 'Pending'
                 ORDER BY datetime DESC
@@ -674,12 +772,7 @@ class AdminApp:
             conn.close()
         
         # Filter the data
-        self.pending_filtered_data = []
-        for row in self.pending_all_data:
-            # Convert all fields to strings for searching
-            row_string = ' '.join([str(item).lower() for item in row])
-            if search_text in row_string:
-                self.pending_filtered_data.append(row)
+        self.filter_pending_data(search_text)
         
         self.pending_search_active = True
         self.pending_page = 0  # Reset to first page
@@ -700,7 +793,7 @@ class AdminApp:
             conn = sqlite3.connect("docusortDB.db")
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT sender_fname, sender_surname, studnum, sender_course, doc_type, datetime
+                SELECT sender_fname, sender_surname, studnum, sender_fac, doc_type, datetime
                 FROM documents
                 WHERE doc_type = 'Received'
                 ORDER BY datetime DESC
@@ -732,6 +825,334 @@ class AdminApp:
             self.received_search_active = False
             self.received_page = 0
             self.load_received_table()
+
+    # Add this method to update the status of a document
+    def update_document_status(self, studnum, datetime_val, new_status):
+        """Update a document's status and refresh all related data"""
+        conn = sqlite3.connect("docusortDB.db")
+        cursor = conn.cursor()
+        
+        # Update the document status
+        cursor.execute("""
+            UPDATE documents
+            SET doc_type = ?
+            WHERE studnum = ? AND datetime = ?
+        """, (new_status, studnum, datetime_val))
+        
+        conn.commit()
+        conn.close()
+        
+        # Refresh both pending and received data caches
+        self.pending_all_data = None
+        self.received_all_data = None
+        
+        # Reload the tables
+        self.load_pending_table()
+        self.load_received_table()
+
+    # Step 1: Add these functions to your AdminApp class
+
+    def show_document_details(self, table_type):
+        """Show detailed information for the selected document"""
+        if table_type == "pending":
+            selected_item = self.pending_tree.selection()
+            if not selected_item:
+                messagebox.showwarning("No Selection", "Please select a document to view details.", parent=self.root)
+                return
+            student_number = self.pending_tree.item(selected_item[0], 'values')[2]  # Index 2 contains student number
+            doc_type = "Pending"
+        else:  # received
+            selected_item = self.received_tree.selection()
+            if not selected_item:
+                messagebox.showwarning("No Selection", "Please select a document to view details.", parent=self.root)
+                return
+            student_number = self.received_tree.item(selected_item[0], 'values')[2]  # Index 2 contains student number
+            doc_type = "Received"
+        
+        # Fetch detailed information from database
+        try:
+            conn = sqlite3.connect("docusortDB.db")
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                SELECT id, sender_fname, sender_surname, studnum, sender_section, sender_fac, 
+                    sender_course, sender_email, rcvr_fname, rcvr_surname, rcvr_fac, 
+                    datetime, doc_type
+                FROM documents
+                WHERE studnum = ? AND doc_type = ?
+            """, (student_number, doc_type))
+            
+            document = cursor.fetchone()
+            conn.close()
+            
+            if not document:
+                messagebox.showerror("Error", "Document not found in database.", parent=self.root)
+                return
+            
+            # Create popup window
+            detail_window = tk.Toplevel(self.root)
+            detail_window.title(f"Document Details - {doc_type}")
+            detail_window.configure(bg=self.bg_dark)
+            detail_window.geometry("775x650")
+            
+            # Make it modal
+            detail_window.transient(self.root)
+            detail_window.grab_set()
+            
+            # Create scrollable frame for content
+            main_frame = tk.Frame(detail_window, bg=self.bg_dark)
+            main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+            
+            # Add a canvas and scrollbar
+            canvas = tk.Canvas(main_frame, bg=self.bg_dark, highlightthickness=0)
+            scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=canvas.yview)
+            
+            # Configure scrollbar style
+            self.style.configure("Vertical.TScrollbar", 
+                                background=self.secondary_bg, 
+                                troughcolor=self.bg_dark, 
+                                bordercolor=self.secondary_bg,
+                                arrowcolor=self.text_light)
+            
+            # Configure the canvas
+            canvas.configure(yscrollcommand=scrollbar.set)
+            canvas.pack(side="left", fill="both", expand=True)
+            scrollbar.pack(side="right", fill="y")
+            
+            # Create a frame inside the canvas
+            content_frame = tk.Frame(canvas, bg=self.bg_dark)
+            canvas.create_window((0, 0), window=content_frame, anchor="nw")
+            
+            # Document ID and Status header
+            header_frame = tk.Frame(content_frame, bg=self.accent_green if doc_type == "Pending" else "#1976d2")
+            header_frame.pack(fill="x", pady=(0, 15))
+            
+            header_label = tk.Label(
+                header_frame,
+                text=f"Document #{document[0]} - {doc_type}",
+                font=("Courier New", 16, "bold"),
+                bg=header_frame["bg"],
+                fg=self.text_dark,
+                padx=10,
+                pady=10
+            )
+            header_label.pack(fill="x")
+            
+            # Document details sections
+            sections = [
+                ("Sender Information", [
+                    ("First Name", document[1]),
+                    ("Last Name", document[2]),
+                    ("Student Number", document[3]),
+                    ("Section", document[4]),
+                    ("Faculty", document[5]),
+                    ("Course", document[6]),
+                    ("Email", document[7])
+                ]),
+                ("Receiver Information", [
+                    ("First Name", document[8]),
+                    ("Last Name", document[9]),
+                    ("Faculty", document[10])
+                ]),
+                ("Document Information", [
+                    ("Date & Time", document[11]),
+                    ("Status", document[12])
+                ])
+            ]
+            
+            # Add each section
+            for section_title, fields in sections:
+                # Section frame
+                section_frame = tk.LabelFrame(
+                    content_frame,
+                    text=section_title,
+                    font=("Courier New", 14, "bold"),
+                    bg=self.bg_dark,
+                    fg=self.text_light,
+                    padx=15,
+                    pady=10
+                )
+                section_frame.pack(fill="x", pady=10)
+                
+                # Add each field
+                for label_text, value in fields:
+                    field_frame = tk.Frame(section_frame, bg=self.bg_dark)
+                    field_frame.pack(fill="x", pady=5)
+                    
+                    # Label
+                    tk.Label(
+                        field_frame,
+                        text=f"{label_text}:",
+                        font=("Courier New", 12),
+                        width=15,
+                        anchor="w",
+                        bg=self.bg_dark,
+                        fg=self.text_light
+                    ).pack(side="left")
+                    
+                    # Value
+                    tk.Label(
+                        field_frame,
+                        text=value,
+                        font=("Courier New", 12),
+                        anchor="w",
+                        bg=self.secondary_bg,
+                        fg=self.text_light,
+                        padx=10,
+                        pady=5,
+                        relief="flat",
+                        borderwidth=1
+                    ).pack(side="left", fill="x", expand=True)
+            
+            # Action buttons based on document type
+            button_frame = tk.Frame(content_frame, bg=self.bg_dark)
+            button_frame.pack(fill="x", pady=20)
+            
+            if doc_type == "Pending":
+                # Mark as received button
+                receive_btn = tk.Button(
+                    button_frame,
+                    text="Mark as Received",
+                    font=("Courier New", 12, "bold"),
+                    bg="#1976d2",  # Blue for receive
+                    fg=self.text_light,
+                    padx=15,
+                    pady=5,
+                    command=lambda: self.mark_as_received(document[0], detail_window)
+                )
+                receive_btn.pack(side="left", padx=10)
+            
+            # Close button
+            close_btn = tk.Button(
+                button_frame,
+                text="Close",
+                font=("Courier New", 12),
+                bg=self.secondary_bg,
+                fg=self.text_light,
+                padx=15,
+                pady=5,
+                command=detail_window.destroy
+            )
+            close_btn.pack(side="left", padx=10)
+            
+            # Configure the scrollregion
+            content_frame.update_idletasks()
+            canvas.configure(scrollregion=canvas.bbox("all"))
+            
+        except sqlite3.Error as e:
+            messagebox.showerror("Database Error", f"Failed to load document details: {e}", parent=self.root)
+
+    def mark_as_received(self, doc_id, window):
+        """Mark a pending document as received"""
+        try:
+            conn = sqlite3.connect("docusortDB.db")
+            cursor = conn.cursor()
+            
+            # Update document status
+            cursor.execute("""
+                UPDATE documents 
+                SET doc_type = 'Received'
+                WHERE id = ?
+            """, (doc_id,))
+            
+            conn.commit()
+            conn.close()
+            
+            messagebox.showinfo("Success", "Document has been marked as received.", parent=window)
+            window.destroy()
+            
+            # Refresh both tables
+            self.pending_page = 0  # Reset to first page
+            self.received_page = 0  # Reset to first page
+            self.load_pending_table()
+            self.load_received_table()
+            
+            # Update dashboard counts
+            conn = sqlite3.connect("docusortDB.db")
+            cursor = conn.cursor()
+            
+            cursor.execute("SELECT COUNT(*) FROM documents WHERE doc_type = 'Pending'")
+            pending_count = cursor.fetchone()[0]
+            
+            cursor.execute("SELECT COUNT(*) FROM documents WHERE doc_type = 'Received'")
+            received_count = cursor.fetchone()[0]
+            
+            conn.close()
+            
+            # Update the count labels
+            self.pending_count_label.config(text=str(pending_count))
+            self.received_count_label.config(text=str(received_count))
+            
+        except sqlite3.Error as e:
+            messagebox.showerror("Database Error", f"Failed to update document: {e}", parent=window)
+
+        # Step 2: Add double-click bindings to the tables in the show_dashboard method
+        # Add these lines after creating the pending_tree and received_tree
+
+
+
+        # Step 3: Add context menu for right-click functionality (optional enhancement)
+    def create_table_context_menu(self):
+        """Create right-click context menus for tables"""
+        # Pending table context menu
+        self.pending_context_menu = tk.Menu(self.root, tearoff=0, bg=self.secondary_bg, fg=self.text_light)
+        self.pending_context_menu.add_command(label="View Details", 
+                                            command=lambda: self.show_document_details("pending"))
+        self.pending_context_menu.add_command(label="Mark as Received", 
+                                            command=self.mark_selected_as_received)
+        
+        # Received table context menu
+        self.received_context_menu = tk.Menu(self.root, tearoff=0, bg=self.secondary_bg, fg=self.text_light)
+        self.received_context_menu.add_command(label="View Details", 
+                                            command=lambda: self.show_document_details("received"))
+        
+        # Bind right-click events
+        self.pending_tree.bind("<Button-3>", self.show_pending_context_menu)
+        self.received_tree.bind("<Button-3>", self.show_received_context_menu)
+
+    def show_pending_context_menu(self, event):
+        """Show context menu on right-click for pending table"""
+        # Select the row under cursor
+        iid = self.pending_tree.identify_row(event.y)
+        if iid:
+            self.pending_tree.selection_set(iid)
+            self.pending_context_menu.tk_popup(event.x_root, event.y_root)
+        
+    def show_received_context_menu(self, event):
+        """Show context menu on right-click for received table"""
+        # Select the row under cursor
+        iid = self.received_tree.identify_row(event.y)
+        if iid:
+            self.received_tree.selection_set(iid)
+            self.received_context_menu.tk_popup(event.x_root, event.y_root)
+
+    def mark_selected_as_received(self):
+        """Mark the selected pending document as received from context menu"""
+        selected_item = self.pending_tree.selection()
+        if not selected_item:
+            messagebox.showwarning("No Selection", "Please select a document to mark as received.", parent=self.root)
+            return
+        
+        student_number = self.pending_tree.item(selected_item[0], 'values')[2]
+        
+        try:
+            conn = sqlite3.connect("docusortDB.db")
+            cursor = conn.cursor()
+            
+            # Get the document ID based on student number
+            cursor.execute("SELECT id FROM documents WHERE studnum = ? AND doc_type = 'Pending'", (student_number,))
+            doc_id = cursor.fetchone()
+            
+            if doc_id:
+                # Call existing method to mark as received
+                conn.close()
+                self.mark_as_received(doc_id[0], self.root)
+            else:
+                conn.close()
+                messagebox.showerror("Error", "Document not found in database.", parent=self.root)
+        
+        except sqlite3.Error as e:
+            messagebox.showerror("Database Error", f"Failed to process document: {e}", parent=self.root)
 
 #ADMIN USERS
     def show_admin_users(self):

@@ -135,7 +135,7 @@ class DocuSortApp:
         sort_label.pack(side=tk.LEFT)
 
         # Start Button below
-        start_button = tk.Button(frame, text="Let's get sorting", font=("Courier New", 18), command=self.sender_info_page, bg="#58cc02", fg="#131f24", cursor="hand2", relief="flat")
+        start_button = tk.Button(frame, text="Click here to continue...", font=("Courier New", 20, "underline"), command=self.sender_info_page, bg="#131f24", fg="#fff", cursor="hand2", relief="flat")
         start_button.pack(pady=30)
 
 
@@ -304,42 +304,47 @@ class DocuSortApp:
         for widget in self.root.winfo_children():
             widget.destroy()
     
-        # Create a frame to hold the form fields and buttons
-        form_frame = tk.Frame(self.root, bg="#131f24")
-        form_frame.pack(pady=(120, 18))  # Adjust top and bottom padding for form_frame
+        # Outer frame with border
+        form_frame = tk.Frame(self.root, bg="#1a2a30")
+        form_frame.pack(pady=(120, 18))
+
+        # Inner frame to simulate "padding" inside the bordered frame
+        inner_form_frame = tk.Frame(form_frame, bg="#1a2a30")
+        inner_form_frame.pack(padx=70, pady=50)  # This creates the internal padding
+
 
         # Sender Information Header (should occupy all columns, centered)
-        tk.Label(form_frame, text="Sender Information", font=("Courier New", 40, "bold"), fg="#58cc02", bg="#131f24").grid(row=0, column=0, columnspan=4, pady=30)
+        tk.Label(inner_form_frame, text="Sender Information", font=("Courier New", 40, "bold"), fg="#58cc02", bg="#1a2a30").grid(row=0, column=0, columnspan=4, pady=30)
 
         # First Name and Last Name (in the same row)
         vcmd = (self.root.register(self.only_letters), '%P')
-        tk.Label(form_frame, text="First Name:", font=("Courier New", 18), fg="white", bg="#131f24").grid(row=1, column=0, padx=10, pady=5, sticky=tk.W)
-        self.first_name_entry = tk.Entry(form_frame, font=("Courier New", 18), fg="white", bg="#131f24", width=18, validate="key", validatecommand=vcmd)
+        tk.Label(inner_form_frame, text="First Name:", font=("Courier New", 18), fg="white", bg="#1a2a30").grid(row=1, column=0, padx=10, pady=5, sticky=tk.W)
+        self.first_name_entry = tk.Entry(inner_form_frame, font=("Courier New", 18), fg="white", bg="#1a2a30", width=18, validate="key", validatecommand=vcmd)
         self.first_name_entry.grid(row=2, column=0, padx=10, pady=5, sticky=tk.W)
         self.first_name_entry.insert(0, self.first_name)
         self.first_name_entry.focus_set()
         
-        tk.Label(form_frame, text="Last Name:", font=("Courier New", 18), fg="white", bg="#131f24").grid(row=1, column=2, padx=10, pady=5, sticky=tk.W)
-        self.last_name_entry = tk.Entry(form_frame, font=("Courier New", 18), fg="white", bg="#131f24", width=18, validate="key", validatecommand=vcmd)
+        tk.Label(inner_form_frame, text="Last Name:", font=("Courier New", 18), fg="white", bg="#1a2a30").grid(row=1, column=2, padx=10, pady=5, sticky=tk.W)
+        self.last_name_entry = tk.Entry(inner_form_frame, font=("Courier New", 18), fg="white", bg="#1a2a30", width=18, validate="key", validatecommand=vcmd)
         self.last_name_entry.grid(row=2, column=2, padx=10, pady=5, sticky=tk.W)
         self.last_name_entry.insert(0, self.last_name)
 
         # Student ID and Section (in the next row)
         vcmd_student_no = (self.root.register(self.only_numbers_and_dash), '%P')
-        tk.Label(form_frame, text="Student ID #:", font=("Courier New", 18), fg="white", bg="#131f24").grid(row=3, column=0, padx=10, pady=5, sticky=tk.W)
-        self.student_id_entry = tk.Entry(form_frame, font=("Courier New", 18), fg="white", bg="#131f24", width=18,
+        tk.Label(inner_form_frame, text="Student ID #:", font=("Courier New", 18), fg="white", bg="#1a2a30").grid(row=3, column=0, padx=10, pady=5, sticky=tk.W)
+        self.student_id_entry = tk.Entry(inner_form_frame, font=("Courier New", 18), fg="white", bg="#1a2a30", width=18,
                                         validate="key", validatecommand=vcmd_student_no)
         self.student_id_entry.grid(row=4, column=0, padx=10, pady=5, sticky=tk.W)
         self.student_id_entry.insert(0, self.student_id)
 
-        tk.Label(form_frame, text="Section:", font=("Courier New", 18), fg="white", bg="#131f24").grid(row=3, column=2, padx=10, pady=5, sticky=tk.W)
-        self.section_entry = tk.Entry(form_frame, font=("Courier New", 18), fg="white", bg="#131f24", width=18)
+        tk.Label(inner_form_frame, text="Section:", font=("Courier New", 18), fg="white", bg="#1a2a30").grid(row=3, column=2, padx=10, pady=5, sticky=tk.W)
+        self.section_entry = tk.Entry(inner_form_frame, font=("Courier New", 18), fg="white", bg="#1a2a30", width=18)
         self.section_entry.grid(row=4, column=2, padx=10, pady=5, sticky=tk.W)
         self.section_entry.insert(0, self.section)
 
         # Faculty and Course (in the next row)
 # Faculty and Course (in the next row)
-        tk.Label(form_frame, text="Faculty:", font=("Courier New", 18), fg="white", bg="#131f24").grid(row=5, column=0, padx=10, pady=5, sticky=tk.W)
+        tk.Label(inner_form_frame, text="Faculty:", font=("Courier New", 18), fg="white", bg="#1a2a30").grid(row=5, column=0, padx=10, pady=5, sticky=tk.W)
 
         faculty_options = [
             "Select Student's Faculty",  # <-- Placeholder
@@ -353,7 +358,7 @@ class DocuSortApp:
         ]
 
         self.faculty_combobox = ttk.Combobox(
-            form_frame,
+            inner_form_frame,
             font=("Courier New", 18),
             width=39,
             state="readonly",
@@ -367,13 +372,13 @@ class DocuSortApp:
         else:
             self.faculty_combobox.set(faculty_options[0])  # Set placeholder
 
-        tk.Label(form_frame, text="Course:", font=("Courier New", 18), fg="white", bg="#131f24").grid(row=7, column=0, padx=10, pady=5, sticky=tk.W)
+        tk.Label(inner_form_frame, text="Course:", font=("Courier New", 18), fg="white", bg="#131f24").grid(row=7, column=0, padx=10, pady=5, sticky=tk.W)
 
         self.course_combobox = ttk.Combobox(
-            form_frame,
+            inner_form_frame,
             font=("Courier New", 18),
             width=39,
-            state="disabled"
+            state="disabled",
         )
         self.course_combobox.grid(row=8, column=0, columnspan=4, padx=10, pady=5, sticky=tk.W)
 
@@ -384,37 +389,39 @@ class DocuSortApp:
             self.course_combobox.set("Select Student's Course")  # Optional placeholder
 
 
-        tk.Label(form_frame, text="Course:", font=("Courier New", 18), fg="white", bg="#131f24").grid(row=7, column=0, padx=10, pady=5, sticky=tk.W)
-        self.course_combobox = ttk.Combobox(form_frame, font=("Courier New", 18), width=39, state="readonly")
+        tk.Label(inner_form_frame, text="Course:", font=("Courier New", 18), fg="white", bg="#1a2a30").grid(row=7, column=0, padx=10, pady=5, sticky=tk.W)
+        self.course_combobox = ttk.Combobox(inner_form_frame, font=("Courier New", 18), width=39, state="readonly")
         self.course_combobox.grid(row=8, column=0, columnspan=4, padx=10, pady=5, sticky=tk.W)
         self.course_combobox.set(self.course)
         
 
         # Cancel Button (Transparent background, white text)
         cancel_button = tk.Button(
-            form_frame,
+            inner_form_frame,
             text="Cancel",
             font=("Courier New", 18),
             command=self.go_back_to_landing_page,
             fg="white",  # Text color is white
-            bg=form_frame.cget("bg"),  # Same as the background of the frame
+            bg=inner_form_frame.cget("bg"),  # Same as the background of the frame
             relief="flat",  # Flat button with no border
-            activebackground=form_frame.cget("bg"),  # Same color when clicked
-            activeforeground="white"  # Text color when clicked
+            activebackground=inner_form_frame.cget("bg"),  # Same color when clicked
+            activeforeground="white",  # Text color when clicked
+            cursor="hand2"
         )
         cancel_button.grid(row=9, column=0, columnspan=2, pady=(40, 0), sticky=tk.E, padx=(0, 200))
 
         # Next Button (Custom background color #58cc02, white text)
         next_button = tk.Button(
-            form_frame,
+            inner_form_frame,
             text="Next",
             font=("Courier New", 18),
             command=self.save_sender_info,
-            fg="white",  # Text color is white
+            fg="#131f24",  # Text color is white
             bg="#58cc02",  # Custom background color
             relief="flat",  # Flat button with no border
             activebackground="#58cc02",  # Same color when clicked
-            activeforeground="white"  # Text color when clicked
+            activeforeground="white",  # Text color when clicked
+            cursor="hand2"
         )
         next_button.grid(row=9, column=2, columnspan=2, pady=(40, 0), sticky=tk.W, padx=(200, 0))
 
@@ -485,6 +492,7 @@ class DocuSortApp:
             return  # Stop the function if any field is empty
         if self.faculty_combobox.get() == "Select Student's Faculty":
             messagebox.showerror("Input Error", "Please select a valid faculty.")
+            return
 
         # Proceed to next page if all fields are filled
         self.receiver_info_page()
@@ -494,57 +502,70 @@ class DocuSortApp:
         for widget in self.root.winfo_children():
             widget.destroy()
 
-        # Create a frame to hold the form fields and buttons
-        form_frame = tk.Frame(self.root, bg="#131f24")
-        form_frame.pack(pady=(175, 18))  # Adjust top and bottom padding for form_frame
+        form_frame = tk.Frame(self.root, bg="#1a2a30")
+        form_frame.pack(pady=(175, 18))
+
+        # Inner frame to simulate "padding" inside the bordered frame
+        inner_form_frame = tk.Frame(form_frame, bg="#1a2a30")
+        inner_form_frame.pack(padx=50, pady=50)  # This creates the internal padding
+
 
         # Receiver Information Header (should occupy all columns, centered)
-        tk.Label(form_frame, text="Receiver Information", font=("Courier New", 32, "bold"), fg="#58cc02", bg="#131f24").grid(row=0, column=0, columnspan=4, pady=50)
+        tk.Label(inner_form_frame, text="Receiver Information", font=("Courier New", 32, "bold"), fg="#58cc02", bg="#1a2a30").grid(row=0, column=0, columnspan=4, pady=50)
 
         # First Name and Last Name (in the same row)
         vcmd = (self.root.register(self.only_letters), '%P')
-        tk.Label(form_frame, text="First Name:", font=("Courier New", 18), fg="white", bg="#131f24").grid(row=1, column=0, padx=10, pady=5, sticky=tk.W)
-        self.receiver_first_name_entry = tk.Entry(form_frame, font=("Courier New", 18), fg="white", bg="#131f24", width=18, validate="key", validatecommand=vcmd)
+        tk.Label(inner_form_frame, text="First Name:", font=("Courier New", 18), fg="white", bg="#1a2a30").grid(row=1, column=0, padx=10, pady=5, sticky=tk.W)
+        self.receiver_first_name_entry = tk.Entry(inner_form_frame, font=("Courier New", 18), fg="white", bg="#1a2a30", width=18, validate="key", validatecommand=vcmd)
         self.receiver_first_name_entry.grid(row=2, column=0, padx=10, pady=5, sticky=tk.W)
         self.receiver_first_name_entry.insert(0, self.receiver_first_name)
         self.receiver_first_name_entry.focus_set()
         
-        tk.Label(form_frame, text="Last Name:", font=("Courier New", 18), fg="white", bg="#131f24").grid(row=1, column=2, padx=10, pady=5, sticky=tk.W)
-        self.receiver_last_name_entry = tk.Entry(form_frame, font=("Courier New", 18), fg="white", bg="#131f24", width=18, validate="key", validatecommand=vcmd)
+        tk.Label(inner_form_frame, text="Last Name:", font=("Courier New", 18), fg="white", bg="#1a2a30").grid(row=1, column=2, padx=10, pady=5, sticky=tk.W)
+        self.receiver_last_name_entry = tk.Entry(inner_form_frame, font=("Courier New", 18), fg="white", bg="#1a2a30", width=18, validate="key", validatecommand=vcmd)
         self.receiver_last_name_entry.grid(row=2, column=2, padx=10, pady=5, sticky=tk.W)
         self.receiver_last_name_entry.insert(0, self.receiver_last_name)
 
         # Faculty (in the same row)
-        tk.Label(form_frame, text="Faculty:", font=("Courier New", 18), fg="white", bg="#131f24").grid(row=3, column=0, padx=10, pady=5, sticky=tk.W)
-        self.receiver_faculty_combobox = ttk.Combobox(form_frame, font=("Courier New", 18), width=38, state="readonly", values=[ 
+        
+        rcvr_faculty_option = [
+            "Select Receiver's Faculty",
             "College of Engineering", 
             "College of Business, Entrepreneurial and Accountancy"
-        ])
+        ]
+        tk.Label(inner_form_frame, text="Faculty:", font=("Courier New", 18), fg="white", bg="#1a2a30").grid(row=3, column=0, padx=10, pady=5, sticky=tk.W)
+        self.receiver_faculty_combobox = ttk.Combobox(inner_form_frame, font=("Courier New", 18), width=38, state="readonly", values=rcvr_faculty_option)
         self.receiver_faculty_combobox.grid(row=4, column=0, columnspan=4, padx=10, pady=5, sticky=tk.W)
         self.receiver_faculty_combobox.set(self.receiver_faculty)
 
 
+        # Set placeholder or a previously saved value
+        if hasattr(self, "faculty") and self.receiver_faculty_combobox in rcvr_faculty_option:
+            self.receiver_faculty_combobox.set(self.receiver_faculty_combobox)
+        else:
+            self.receiver_faculty_combobox.set(rcvr_faculty_option[0])  # Set placeholder
+
         # Buttons (Back and Next)
         back_button = tk.Button(
-            form_frame,
+            inner_form_frame,
             text="Back",
             font=("Courier New", 18),
             command=self.sender_info_page,
             fg="white",  # Text color is white
-            bg=form_frame.cget("bg"),  # Same as the background of the frame
+            bg=inner_form_frame.cget("bg"),  # Same as the background of the frame
             relief="flat",  # Flat button with no border
-            activebackground=form_frame.cget("bg"),  # Same color when clicked
+            activebackground=inner_form_frame.cget("bg"),  # Same color when clicked
             activeforeground="white"  # Text color when clicked
         )
         back_button.grid(row=5, column=0, columnspan=2, pady=(40, 0), sticky=tk.E, padx=(0, 200))
 
         # Changed from Submit to Next
         next_button = tk.Button(
-            form_frame,
+            inner_form_frame,
             text="Next",
             font=("Courier New", 18),
             command=self.save_receiver_info,
-            fg="white",  # Text color is white
+            fg="#131f24",  # Text color is white
             bg="#58cc02",  # Custom background color
             relief="flat",  # Flat button with no border
             activebackground="#58cc02",  # Same color when clicked
@@ -559,162 +580,151 @@ class DocuSortApp:
         self.receiver_faculty = self.receiver_faculty_combobox.get()
         
         # Check if any field is empty
-        if not all([self.receiver_first_name, self.receiver_last_name, self.receiver_faculty]):
+        if not all([self.receiver_first_name, self.receiver_last_name]):
             messagebox.showerror("Missing Information", "Please fill in all the fields before proceeding.")
             return  # Stop the function if any field is empty
-
+        if self.receiver_faculty_combobox.get() == "Select Receiver's Faculty":
+            messagebox.showerror("Input Error", "Please select a valid faculty.")
+            return
         # Proceed to preview page
         self.preview_page()
 
     def preview_page(self):
-        # Clear any previous widgets
-        for widget in self.root.winfo_children():
-            widget.destroy()
-            
-        # Create a frame to hold the preview information
-        preview_frame = tk.Frame(self.root, bg="#131f24")
-        preview_frame.pack(pady=(100, 18))
-        
-        # Preview Header
-        tk.Label(preview_frame, text="Document Information Preview", font=("Courier New", 32, "bold"), 
-                fg="#58cc02", bg="#131f24").grid(row=0, column=0, columnspan=2, pady=30)
-        
-        # Create a frame for the information with a slightly different background for better visibility
-        info_frame = tk.Frame(preview_frame, bg="#1a2a30", padx=20, pady=20)
-        info_frame.grid(row=1, column=0, columnspan=2)
-        
-        # Sender Information Section
-        tk.Label(info_frame, text="SENDER INFORMATION", font=("Courier New", 18, "bold"), 
-                fg="#58cc02", bg="#1a2a30").grid(row=0, column=0, columnspan=4, sticky=tk.W, pady=(0, 10))
-        
-        # Create two columns for better organization
-        left_col = 0
-        right_col = 2
-        
-        # Sender details - left column
-        tk.Label(info_frame, text="First Name:", font=("Courier New", 14), 
-                fg="white", bg="#1a2a30").grid(row=1, column=left_col, sticky=tk.W, pady=5)
-        tk.Label(info_frame, text=self.first_name, font=("Courier New", 14, "bold"), 
-                fg="white", bg="#1a2a30").grid(row=1, column=left_col+1, sticky=tk.W, pady=5)
-        
-        tk.Label(info_frame, text="Last Name:", font=("Courier New", 14), 
-                fg="white", bg="#1a2a30").grid(row=2, column=left_col, sticky=tk.W, pady=5)
-        tk.Label(info_frame, text=self.last_name, font=("Courier New", 14, "bold"), 
-                fg="white", bg="#1a2a30").grid(row=2, column=left_col+1, sticky=tk.W, pady=5)
-        
-        tk.Label(info_frame, text="Student ID:", font=("Courier New", 14), 
-                fg="white", bg="#1a2a30").grid(row=3, column=left_col, sticky=tk.W, pady=5)
-        tk.Label(info_frame, text=self.student_id, font=("Courier New", 14, "bold"), 
-                fg="white", bg="#1a2a30").grid(row=3, column=left_col+1, sticky=tk.W, pady=5)
-        
-        # Sender details - right column
-        tk.Label(info_frame, text="Section:", font=("Courier New", 14), 
-                fg="white", bg="#1a2a30").grid(row=1, column=right_col, sticky=tk.W, pady=5, padx=(20, 0))
-        tk.Label(info_frame, text=self.section, font=("Courier New", 14, "bold"), 
-                fg="white", bg="#1a2a30").grid(row=1, column=right_col+1, sticky=tk.W, pady=5)
-        
-        tk.Label(info_frame, text="Faculty:", font=("Courier New", 14), 
-                fg="white", bg="#1a2a30").grid(row=2, column=right_col, sticky=tk.W, pady=5, padx=(20, 0))
-        tk.Label(info_frame, text=self.faculty, font=("Courier New", 14, "bold"), 
-                fg="white", bg="#1a2a30").grid(row=2, column=right_col+1, sticky=tk.W, pady=5)
-        
-        tk.Label(info_frame, text="Course:", font=("Courier New", 14), 
-                fg="white", bg="#1a2a30").grid(row=3, column=right_col, sticky=tk.W, pady=5, padx=(20, 0))
-        tk.Label(info_frame, text=self.course, font=("Courier New", 14, "bold"), 
-                fg="white", bg="#1a2a30").grid(row=3, column=right_col+1, sticky=tk.W, pady=5)
-        
-        # Separator (a horizontal line)
-        separator = tk.Frame(info_frame, height=2, bg="#58cc02")
-        separator.grid(row=4, column=0, columnspan=4, sticky="ew", pady=15)
-        
-        # Receiver Information Section
-        tk.Label(info_frame, text="RECEIVER INFORMATION", font=("Courier New", 18, "bold"), 
-                fg="#58cc02", bg="#1a2a30").grid(row=5, column=0, columnspan=4, sticky=tk.W, pady=(10, 10))
-        
-        # Receiver details
-        tk.Label(info_frame, text="First Name:", font=("Courier New", 14), 
-                fg="white", bg="#1a2a30").grid(row=6, column=left_col, sticky=tk.W, pady=5)
-        tk.Label(info_frame, text=self.receiver_first_name, font=("Courier New", 14, "bold"), 
-                fg="white", bg="#1a2a30").grid(row=6, column=left_col+1, sticky=tk.W, pady=5)
-        
-        tk.Label(info_frame, text="Last Name:", font=("Courier New", 14), 
-                fg="white", bg="#1a2a30").grid(row=7, column=left_col, sticky=tk.W, pady=5)
-        tk.Label(info_frame, text=self.receiver_last_name, font=("Courier New", 14, "bold"), 
-                fg="white", bg="#1a2a30").grid(row=7, column=left_col+1, sticky=tk.W, pady=5)
-        
-        tk.Label(info_frame, text="Faculty:", font=("Courier New", 14), 
-                fg="white", bg="#1a2a30").grid(row=6, column=right_col, sticky=tk.W, pady=5, padx=(20, 0))
-        tk.Label(info_frame, text=self.receiver_faculty, font=("Courier New", 14, "bold"), 
-                fg="white", bg="#1a2a30").grid(row=6, column=right_col+1, sticky=tk.W, pady=5)
-        
-        # Timestamp information
-        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        
-        # Separator (a horizontal line)
-        separator2 = tk.Frame(info_frame, height=2, bg="#58cc02")
-        separator2.grid(row=8, column=0, columnspan=4, sticky="ew", pady=15)
-        
-        # Timestamp section
-        tk.Label(info_frame, text="TIMESTAMP", font=("Courier New", 18, "bold"), 
-                fg="#58cc02", bg="#1a2a30").grid(row=9, column=0, columnspan=4, sticky=tk.W, pady=(10, 10))
+            # Clear any previous widgets
+            for widget in self.root.winfo_children():
+                widget.destroy()
                 
-        tk.Label(info_frame, text="Date and Time:", font=("Courier New", 14), 
-                fg="white", bg="#1a2a30").grid(row=10, column=left_col, sticky=tk.W, pady=5)
-        tk.Label(info_frame, text=current_time, font=("Courier New", 14, "bold"), 
-                fg="white", bg="#1a2a30").grid(row=10, column=left_col+1, columnspan=3, sticky=tk.W, pady=5)
-        
-        # Create a button frame for better positioning
-        button_frame = tk.Frame(preview_frame, bg="#131f24")
-        button_frame.grid(row=2, column=0, columnspan=2, pady=30)
-        
-        # Back Button
-        back_button = tk.Button(
-            button_frame,
-            text="Back",
-            font=("Courier New", 18),
-            command=self.receiver_info_page,
-            fg="white",
-            bg="#131f24",
-            relief="flat",
-            activebackground="#131f24",
-            activeforeground="white",
-            cursor="hand2"
-        )
-        back_button.pack(side=tk.LEFT, padx=30)
-        
-        # Edit Button
-        edit_button = tk.Button(
-            button_frame,
-            text="Edit",
-            font=("Courier New", 18),
-            command=self.sender_info_page,
-            fg="white",
-            bg="#131f24",
-            relief="flat",
-            activebackground="#131f24",
-            activeforeground="white",
-            cursor="hand2"
-        )
-        edit_button.pack(side=tk.LEFT, padx=30)
-        
-        # Submit Button
-        submit_button = tk.Button(
-            button_frame,
-            text="Submit",
-            font=("Courier New", 18),
-            command=self.submit_document,
-            fg="#131f24",
-            bg="#58cc02",
-            relief="flat",
-            activebackground="#58cc02",
-            activeforeground="#131f24",
-            cursor="hand2"
-        )
-        submit_button.pack(side=tk.LEFT, padx=30)
+            # Create a frame to hold the preview information
+            preview_frame = tk.Frame(self.root, bg="#131f24")
+            preview_frame.pack(pady=(100, 18))
+            
+            # Preview Header
+            tk.Label(preview_frame, text="Document Information Preview", font=("Courier New", 32, "bold"), 
+                    fg="#58cc02", bg="#131f24").grid(row=0, column=0, columnspan=2, pady=30)
+            
+            # Create a frame for the information with a slightly different background for better visibility
+            info_frame = tk.Frame(preview_frame, bg="#1a2a30", padx=20, pady=20)
+            info_frame.grid(row=1, column=0, columnspan=2)
+            
+            # Sender Information Section
+            tk.Label(info_frame, text="SENDER INFORMATION", font=("Courier New", 18, "bold"), 
+                    fg="#58cc02", bg="#1a2a30").grid(row=0, column=0, columnspan=4, sticky=tk.W, pady=(0, 10))
+            
+            # Create two columns for better organization
+            left_col = 0
+            spacer_col = 2  # this is the spacer column
+            right_col = 3   # shifted right to account for spacer
+            
+            # Sender details - First Name and Last Name (same row)
+            tk.Label(info_frame, text="First Name:", font=("Courier New", 14), fg="white", bg="#1a2a30").grid(row=1, column=left_col, sticky=tk.W, pady=5)
+            tk.Label(info_frame, text=self.first_name, font=("Courier New", 14, "bold"), fg="white", bg="#1a2a30").grid(row=1, column=left_col+1, sticky=tk.W, pady=5)
+
+            tk.Label(info_frame, text="    ", font=("Courier New", 14), fg="white", bg="#1a2a30").grid(row=1, column=spacer_col, sticky=tk.W, pady=5)
+
+            tk.Label(info_frame, text="Last Name:", font=("Courier New", 14), fg="white", bg="#1a2a30").grid(row=1, column=right_col, sticky=tk.W, pady=5)
+            tk.Label(info_frame, text=self.last_name, font=("Courier New", 14, "bold"), fg="white", bg="#1a2a30").grid(row=1, column=right_col+1, sticky=tk.W, pady=5)
+
+            # Student ID and Section (same row)
+            tk.Label(info_frame, text="Student ID:", font=("Courier New", 14), fg="white", bg="#1a2a30").grid(row=2, column=left_col, sticky=tk.W, pady=5)
+            tk.Label(info_frame, text=self.student_id, font=("Courier New", 14, "bold"), fg="white", bg="#1a2a30").grid(row=2, column=left_col+1, sticky=tk.W, pady=5)
+
+            tk.Label(info_frame, text="Section:", font=("Courier New", 14), fg="white", bg="#1a2a30").grid(row=2, column=right_col, sticky=tk.W, pady=5)
+            tk.Label(info_frame, text=self.section, font=("Courier New", 14, "bold"), fg="white", bg="#1a2a30").grid(row=2, column=right_col+1, sticky=tk.W, pady=5)
+
+            # Faculty and Course (same row)
+            tk.Label(info_frame, text="Faculty:", font=("Courier New", 14), fg="white", bg="#1a2a30").grid(row=3, column=left_col, sticky=tk.W, pady=5)
+            tk.Label(info_frame, text=self.faculty, font=("Courier New", 14, "bold"), fg="white", bg="#1a2a30", justify="left", wraplength=400).grid(row=3, column=left_col+1, sticky=tk.W, pady=5)
+
+            tk.Label(info_frame, text="Course:", font=("Courier New", 14), fg="white", bg="#1a2a30").grid(row=3, column=right_col, sticky=tk.W, pady=5)
+            tk.Label(info_frame, text=self.course, font=("Courier New", 14, "bold"), fg="white", bg="#1a2a30").grid(row=3, column=right_col+1, sticky=tk.W, pady=5)
+
+            # Separator (a horizontal line)
+            separator = tk.Frame(info_frame, height=2, bg="#58cc02")
+            separator.grid(row=4, column=0, columnspan=5, sticky="ew", pady=15)
+            
+            # Receiver Information Section
+            tk.Label(info_frame, text="RECEIVER INFORMATION", font=("Courier New", 18, "bold"), 
+                    fg="#58cc02", bg="#1a2a30").grid(row=5, column=0, columnspan=4, sticky=tk.W, pady=(10, 10))
+            
+            # Receiver details - First Name and Last Name (same row)
+            tk.Label(info_frame, text="First Name:", font=("Courier New", 14), fg="white", bg="#1a2a30").grid(row=6, column=left_col, sticky=tk.W, pady=5)
+            tk.Label(info_frame, text=self.receiver_first_name, font=("Courier New", 14, "bold"), fg="white", bg="#1a2a30").grid(row=6, column=left_col+1, sticky=tk.W, pady=5)
+
+            tk.Label(info_frame, text="Last Name:", font=("Courier New", 14), fg="white", bg="#1a2a30").grid(row=6, column=right_col, sticky=tk.W, pady=5)
+            tk.Label(info_frame, text=self.receiver_last_name, font=("Courier New", 14, "bold"), fg="white", bg="#1a2a30").grid(row=6, column=right_col+1, sticky=tk.W, pady=5)
+
+            # Receiver Faculty (new row)
+            tk.Label(info_frame, text="Faculty:", font=("Courier New", 14), fg="white", bg="#1a2a30").grid(row=7, column=left_col, sticky=tk.W, pady=5)
+            tk.Label(info_frame, text=self.receiver_faculty, font=("Courier New", 14, "bold"), fg="white", bg="#1a2a30", justify="left", wraplength=400).grid(row=7, column=left_col+1, sticky=tk.W, pady=5)
+
+            # Timestamp information
+            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            
+            # Separator (a horizontal line)
+            separator2 = tk.Frame(info_frame, height=2, bg="#58cc02")
+            separator2.grid(row=8, column=0, columnspan=5, sticky="ew", pady=15)
+            
+            # Timestamp section
+            tk.Label(info_frame, text="TIMESTAMP", font=("Courier New", 18, "bold"), 
+                    fg="#58cc02", bg="#1a2a30").grid(row=9, column=0, columnspan=4, sticky=tk.W, pady=(10, 10))
+                    
+            tk.Label(info_frame, text="Date and Time:", font=("Courier New", 14), 
+                    fg="white", bg="#1a2a30").grid(row=10, column=left_col, sticky=tk.W, pady=5)
+            tk.Label(info_frame, text=current_time, font=("Courier New", 14, "bold"), 
+                    fg="white", bg="#1a2a30").grid(row=10, column=left_col+1, columnspan=3, sticky=tk.W, pady=5)
+            
+            # Create a button frame for better positioning
+            button_frame = tk.Frame(preview_frame, bg="#131f24")
+            button_frame.grid(row=2, column=0, columnspan=2, pady=30)
+            
+            # Back Button
+            back_button = tk.Button(
+                button_frame,
+                text="Back",
+                font=("Courier New", 18),
+                command=self.receiver_info_page,
+                fg="white",
+                bg="#131f24",
+                relief="flat",
+                activebackground="#131f24",
+                activeforeground="white",
+                cursor="hand2"
+            )
+            back_button.pack(side=tk.LEFT, padx=30)
+            
+            # Edit Button
+            edit_button = tk.Button(
+                button_frame,
+                text="Edit",
+                font=("Courier New", 18),
+                command=self.sender_info_page,
+                fg="white",
+                bg="#131f24",
+                relief="flat",
+                activebackground="#131f24",
+                activeforeground="white",
+                cursor="hand2"
+            )
+            edit_button.pack(side=tk.LEFT, padx=30)
+            
+            # Submit Button
+            submit_button = tk.Button(
+                button_frame,
+                text="Submit",
+                font=("Courier New", 18),
+                command=self.submit_document,
+                fg="#131f24",
+                bg="#58cc02",
+                relief="flat",
+                activebackground="#58cc02",
+                activeforeground="#131f24",
+                cursor="hand2"
+            )
+            submit_button.pack(side=tk.LEFT, padx=30)
 
 
     def submit_document(self):
-                    # Construct the recipient email address
+        # Construct the recipient email address
         student_email = f"{self.student_id}@rtu.edu.ph"
 
         try:
@@ -725,6 +735,7 @@ class DocuSortApp:
             # Current timestamp
             current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             doc_type = "Pending"
+            
             # Insert the document information into the database
             cursor.execute('''
                 INSERT INTO documents 
@@ -739,80 +750,10 @@ class DocuSortApp:
             conn.commit()
             conn.close()
 
-            
-            # Function to verify email existence
-            def verify_email(email):
-                import socket
-                import re
-                
-                # Basic format validation
-                if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
-                    return False, "Invalid email format"
-                    
-                # Split email into user and domain parts
-                try:
-                    domain = email.split('@')[1]
-                except IndexError:
-                    return False, "Invalid email format"
-                    
-                # Try to get the MX record for domain
-                try:
-                    # Instead of using dns.resolver, we'll use socket to check if domain exists
-                    socket.gethostbyname(domain)
-                    return True, "Email domain exists"
-                except socket.gaierror:
-                    return False, f"Domain '{domain}' does not exist"
-                    
-            # Verify the email
-            email_is_valid, email_status = verify_email(student_email)
-            
-            if not email_is_valid:
-                messagebox.showwarning("Email Warning", f"Email verification issue: {email_status}\n\nThe submission has been saved, but the receipt may not be delivered.")
-            
-            # Construct the email
-            email_sender = "docusort@gmail.com"  # Your Gmail address
-            email_password = "kpgc hbzr kfyb ojiu"  # App Password
-            email_subject = "Document Submission Receipt"
-            email_body = f"""Hello {self.first_name} {self.last_name},
-
-    Your document has been successfully submitted on {current_time}.
-    Here are the details of your submission:
-
-    - Name: {self.first_name} {self.last_name}
-    - Student ID: {self.student_id}
-    - Section: {self.section}
-    - Course: {self.course}
-    - Faculty: {self.faculty}
-    - Receiver: {self.receiver_first_name} {self.receiver_last_name} ({self.receiver_faculty})
-    - Timestamp: {current_time}
-
-    Thank you for using our document submission service!
-
-    Best regards,
-    Docusort System
-    """
-
-            # Create proper email format with headers
-            from email.mime.text import MIMEText
-            from email.mime.multipart import MIMEMultipart
-
-            message = MIMEMultipart()
-            message["From"] = email_sender
-            message["To"] = student_email
-            message["Subject"] = email_subject
-            message.attach(MIMEText(email_body, "plain"))
-
-            # Send the email
-            try:
-                server = smtplib.SMTP("smtp.gmail.com", 587)
-                server.starttls()
-                server.login(email_sender, email_password)
-                server.send_message(message)
-                server.quit()
-                email_sent = True
-            except Exception as e:
-                email_sent = False
-                print(f"Email error: {e}")
+            # Only send email if not in testing mode
+            email_sent = False
+            if not getattr(self, 'testing_mode', True):  # You can add a testing_mode flag
+                email_sent = self.send_receipt_email(student_email, current_time)
 
             # Show success message
             if email_sent:
@@ -831,6 +772,63 @@ class DocuSortApp:
         except Exception as e:
             messagebox.showerror("Error", f"An unexpected error occurred: {e}")
 
+    def send_receipt_email(self, student_email, submission_time):
+        """
+        Sends a receipt email to the student with submission details
+        
+        Args:
+            student_email (str): The email address to send the receipt to
+            submission_time (str): The timestamp when the document was submitted
+            
+        Returns:
+            bool: True if email was sent successfully, False otherwise
+        """
+        try:
+            # Construct the email
+            email_sender = "docusort@gmail.com"  # Your Gmail address
+            email_password = "kpgc hbzr kfyb ojiu"  # App Password
+            email_subject = "Document Submission Receipt"
+            email_body = f"""Hello {self.first_name} {self.last_name},
+
+    Your document has been successfully submitted on {submission_time}.
+    Here are the details of your submission:
+
+    - Name: {self.first_name} {self.last_name}
+    - Student ID: {self.student_id}
+    - Section: {self.section}
+    - Course: {self.course}
+    - Faculty: {self.faculty}
+    - Receiver: {self.receiver_first_name} {self.receiver_last_name} ({self.receiver_faculty})
+    - Timestamp: {submission_time}
+
+    Thank you for using our document submission service!
+
+    Best regards,
+    Docusort System
+    """
+
+            # Create proper email format with headers
+            from email.mime.text import MIMEText
+            from email.mime.multipart import MIMEMultipart
+
+            message = MIMEMultipart()
+            message["From"] = email_sender
+            message["To"] = student_email
+            message["Subject"] = email_subject
+            message.attach(MIMEText(email_body, "plain"))
+
+            # Send the email
+            server = smtplib.SMTP("smtp.gmail.com", 587)
+            server.starttls()
+            server.login(email_sender, email_password)
+            server.send_message(message)
+            server.quit()
+            
+            return True
+            
+        except Exception as e:
+            print(f"Email error: {e}")
+            return False
     def cleartxt_form(self):
         # Reset the instance variables to empty strings
         self.first_name = ""

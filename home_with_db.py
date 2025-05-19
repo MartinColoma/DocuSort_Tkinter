@@ -10,6 +10,8 @@ import RPi.GPIO as GPIO
 import time
 import threading
 
+
+
 # Pin Definitions
 servo_pin = 17
 ir_pin = 27
@@ -32,37 +34,34 @@ def set_angle_second_servo(angle):
     pi.set_servo_pulsewidth(second_servo_pin, pulsewidth)
 
 
-def move_second_servo_with_ir_detection(root):
-    # Move second servo to 90� (open)
+# def move_second_servo_with_ir_detection(root, app_instance):
+#     # Move second servo to 90� (open)
     
-    print("[SUBMIT] Second servo (Pin 22): moved to 90� (open)")
-
-    def wait_for_ir_and_revert():
-        print("[SUBMIT] Waiting for IR detection...")
-        while pi.read(ir_pin) == 1:  # Wait until object is detected (LOW = detected)
-            time.sleep(0.1)
-
-        print("[SUBMIT] IR sensor detected an object!")
-
-        # Show messagebox on the main Tkinter thread
-        root.after(0, lambda: messagebox.showinfo("IR Sensor", "Object Detected!"))
-
-        time.sleep(3)
+#     print("[SUBMIT] Second servo (Pin 22): moved to 90� (open)")
+#     def wait_for_ir_and_revert():
+#         print("[SUBMIT] Waiting for IR detection...")
+#         while pi.read(ir_pin) == 1:  # Wait until object is detected (LOW = detected)
+#             time.sleep(0.1)
+#         print("[SUBMIT] IR sensor detected an object!")
+#         # Show messagebox on the main Tkinter thread
+#         root.after(0, lambda: messagebox.showinfo("IR Sensor", "Object Detected!"))
+#         time.sleep(3)
     
-            # Move back to 0� (closed)
-        set_angle_second_servo(0)
-        print("[SUBMIT] Second servo (Pin 22): returned to 0� (closed)")
-
-    # Start background detection thread
-    threading.Thread(target=wait_for_ir_and_revert, daemon=True).start()
+#         # Move back to 0� (closed)
+#         set_angle_second_servo(0)
+#         # Use the app_instance to call instance methods
+#         root.after(0, app_instance.landing_page)
+#         root.after(0, app_instance.cleartxt_form)
+#         print("[SUBMIT] Second servo (Pin 22): returned to 0� (closed)")
+    
+#     # Start background detection thread
+#     threading.Thread(target=wait_for_ir_and_revert, daemon=True).start()
 
 
 
 # Track last position
 last_angle = None
 
-# Background IR Monitoring Thread (optional)
-import threading
 
 # Set IR pin as input
 pi.set_mode(ir_pin, pigpio.INPUT)
@@ -98,6 +97,44 @@ class DocuSortApp:
     def only_letters(self, input_text):
         return input_text.isalpha() or input_text == ""
     
+    def wait_for_document_insertion(self, callback=None):
+        """Wait for document to be inserted via IR sensor detection"""
+        def check_ir_sensor():
+            if pi.read(ir_pin) == 0:  # Document detected (LOW signal)
+                print("[SUBMIT] Document detected by IR sensor!")
+                if callback:
+                    callback()  # Call the callback function when document is detected
+            else:
+                # Check again after a short delay
+                self.root.after(100, check_ir_sensor)
+        
+        # Start checking for IR sensor
+        print("[SUBMIT] Waiting for document insertion...")
+        check_ir_sensor()
+    
+    def move_second_servo_with_ir_detection(self, callback=None):
+        """
+        Move second servo to specified angle and wait for IR detection to close it
+        Optional callback parameter is ignored as it's just to maintain compatibility
+        """
+        # Servo should already be at the correct angle by this point
+        print("[SUBMIT] Second servo is open, waiting for document processing...")
+        
+        def wait_for_ir_and_revert():
+            # Wait a moment to ensure the document is fully processed
+            time.sleep(3)
+            
+            # Move back to 0� (closed)
+            set_angle_second_servo(0)
+            print("[SUBMIT] Second servo (Pin 22): returned to 0� (closed)")
+            
+            # Return to landing page and clear form
+            self.root.after(0, self.landing_page)
+            self.root.after(0, self.cleartxt_form)
+        
+        # Start background thread for waiting and closing
+        threading.Thread(target=wait_for_ir_and_revert, daemon=True).start()
+
     def __init__(self, root):
         self.root = root
         self.root.title("DocuSort")
@@ -833,64 +870,41 @@ class DocuSortApp:
 
 
     def submit_document(self):
-        # Construct the recipient email address
-        student_email = f"{self.student_id}@rtu.edu.ph"
 
         try:
-            # Connect to the database
-            conn = sqlite3.connect('docusortDB.db')
-            cursor = conn.cursor()
-
-            # Current timestamp
+            student_email = f"{self.student_id}@rtu.edu.ph"
             current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            doc_type = "Pending"
-
-            # Insert the document information into the database
-            cursor.execute('''
-                INSERT INTO documents 
-                (sender_fname, sender_surname, studnum, sender_section, sender_fac, sender_course,sender_email, 
-                rcvr_fname, rcvr_surname, rcvr_fac, datetime, doc_type)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                self.first_name, self.last_name, self.student_id, self.section, self.faculty, self.course, student_email,
-                self.receiver_first_name, self.receiver_last_name, self.receiver_faculty, current_time, doc_type
-            ))
-
-            conn.commit()
-            conn.close()
-            set_angle_second_servo(35)
-            move_second_servo_with_ir_detection(self.root)
-            # Wait 5 seconds before resetting servo
-            
-
-       
-
-        except Exception as e:
-            print(f"Submit error: {e}")
-            messagebox.showerror("Error", f"An error occurred: {e}")
-
-            conn.commit()
-            conn.close()
 
             # Only send email if not in testing mode
             email_sent = False
             if not getattr(self, 'testing_mode', True):  # You can add a testing_mode flag
                 email_sent = self.send_receipt_email(student_email, current_time)
 
-            # Show success message
-            if email_sent:
-                messagebox.showinfo("Success", f"Document successfully submitted!\nEmail receipt sent to {student_email}")
-            else:
-                messagebox.showinfo("Success", f"Document successfully submitted!\nNote: Could not send email receipt to {student_email}")
+            # First, prompt user to insert document
+            messagebox.showinfo("Insert Document", "Please insert your document into the slot now.")
 
-            # Reset form and go back to landing page
-            self.landing_page()
-            self.cleartxt_form()
+            # Open the servo to receive the document
+            set_angle_second_servo(35)
 
-        except sqlite3.Error as e:
-            messagebox.showerror("Database Error", f"Failed to submit document: {e}")
-            if 'conn' in locals() and conn:
-                conn.close()
+            # Define a callback function to handle document detection and completion
+            def on_document_inserted():
+                # Show success message
+                if email_sent:
+                    messagebox.showinfo("Success", f"Document successfully submitted!\nEmail receipt sent to {student_email}")
+                    self.submit_to_database()
+                else:
+                    messagebox.showinfo("Success", f"Document successfully submitted!\nNote: Could not send email receipt to {student_email}")
+                    self.submit_to_database()
+                # Call the method to wait for IR detection and return servo to closed position
+                self.move_second_servo_with_ir_detection(callback=on_document_inserted)
+
+            # Start the IR detection in a way that calls our callback when document is detected
+            self.wait_for_document_insertion(callback=on_document_inserted)
+            # self.landing_page()
+            # self.cleartxt_form()
+
+
+ 
         except Exception as e:
             messagebox.showerror("Error", f"An unexpected error occurred: {e}")
 
@@ -951,6 +965,36 @@ class DocuSortApp:
         except Exception as e:
             print(f"Email error: {e}")
             return False
+
+    def submit_to_database(self):
+        try:
+            student_email = f"{self.student_id}@rtu.edu.ph"
+
+            # Connect to the database
+            conn = sqlite3.connect('docusortDB.db')
+            cursor = conn.cursor()
+
+            # Current timestamp
+            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            doc_type = "Pending"
+            # Insert the document information into the database
+            cursor.execute('''
+                INSERT INTO documents 
+                (sender_fname, sender_surname, studnum, sender_section, sender_fac, sender_course,sender_email, 
+                rcvr_fname, rcvr_surname, rcvr_fac, datetime, doc_type)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                self.first_name, self.last_name, self.student_id, self.section, self.faculty, self.course, student_email,
+                self.receiver_first_name, self.receiver_last_name, self.receiver_faculty, current_time, doc_type
+                ))
+
+            conn.commit()
+            conn.close()
+        except sqlite3.Error as e:
+            messagebox.showerror("Database Error", f"Failed to submit document: {e}")
+            if 'conn' in locals() and conn:
+                conn.close()    
+
     def cleartxt_form(self):
         # Reset the instance variables to empty strings
         self.first_name = ""

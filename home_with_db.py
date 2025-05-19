@@ -23,11 +23,8 @@ class DocuSortApp:
         # self.root.resizable(False, False)
         self.root.configure(bg="#131f24")
         self.root.attributes('-fullscreen', True)
-        # Bind Escape key to exit fullscreen
-        self.root.bind("<Escape>", self.exit_fullscreen)
-        # Bind F or f key to re-enter fullscreen
-        self.root.bind("<f>", self.toggle_fullscreen)
-        self.root.bind("<F>", self.toggle_fullscreen)
+        self.root.bind("<Key>", self.press_to_start)
+
         # Initialize database first!
         self.initialize_database()
 
@@ -52,7 +49,25 @@ class DocuSortApp:
 
     def exit_fullscreen(self, event=None):
         self.root.attributes("-fullscreen", False)
-        
+    def press_to_start(self, event=None):
+        excluded_keys = {
+            "Alt_L", "Alt_R", "Tab",
+            "F1", "F2", "F3", "F4", "F5", "F6",
+            "F7", "F8", "F9", "F10", "F11", "F12"
+        }
+
+        # If this was triggered by a keypress, check if the key is excluded
+        if event is not None and event.keysym in excluded_keys:
+            return
+
+        self.root.unbind("<Key>")  # Unbind the key event to prevent multiple triggers
+        self.sender_info_page()
+        self.root.bind("<Escape>", self.exit_fullscreen)
+        self.root.bind("<f>", self.toggle_fullscreen)
+        self.root.bind("<F>", self.toggle_fullscreen)
+
+
+            
     def on_closing(self):
         if messagebox.askokcancel("Quit", "Do you really want to quit?"):
             self.root.destroy()
@@ -85,7 +100,7 @@ class DocuSortApp:
         # Clear previous widgets
         for widget in self.root.winfo_children():
             widget.destroy()
-
+        
         frame = tk.Frame(self.root, bg="#131f24")
         frame.pack(fill=tk.BOTH, expand=True)
 
@@ -135,7 +150,7 @@ class DocuSortApp:
         sort_label.pack(side=tk.LEFT)
 
         # Start Button below
-        start_button = tk.Button(frame, text="Click here to continue...", font=("Courier New", 20, "underline"), command=self.sender_info_page, bg="#131f24", fg="#fff", cursor="hand2", relief="flat")
+        start_button = tk.Button(frame, text="Press Any Key to Start...", font=("Courier New", 20), command=self.sender_info_page, bg="#131f24", fg="#fff", cursor="hand2", relief="flat")
         start_button.pack(pady=30)
 
 
@@ -163,38 +178,42 @@ class DocuSortApp:
         for widget in self.root.winfo_children():
             widget.destroy()
         self.cleartxt_form()
+        self.root.unbind("<Key>")  # Unbind the key event to prevent multiple triggers
 
         # Create a frame for the login form
-        form_frame = tk.Frame(self.root, bg="#131f24")
-        form_frame.pack(pady=(150, 18))
+        form_frame = tk.Frame(self.root, bg="#1a2a30")
+        form_frame.pack(pady=(175, 18))
 
+        inner_form_frame = tk.Frame(form_frame, bg="#1a2a30")
+        inner_form_frame.pack(padx=70, pady=50)  # This creates the internal padding
+        
         # Header
-        tk.Label(form_frame, text="Admin Login", font=("Courier New", 40, "bold"),
-                fg="#58cc02", bg="#131f24").grid(row=0, column=0, columnspan=2, pady=30)
+        tk.Label(inner_form_frame, text="Admin Login", font=("Courier New", 40, "bold"),
+                fg="#58cc02", bg="#1a2a30").grid(row=0, column=0, columnspan=2, pady=30)
 
         # Username
-        tk.Label(form_frame, text="Username:", font=("Courier New", 18),
-                fg="white", bg="#131f24").grid(row=1, column=0, padx=10, pady=5, sticky=tk.W)
-        self.username_entry = tk.Entry(form_frame, font=("Courier New", 18),
-                                    fg="white", bg="#131f24", width=30)
+        tk.Label(inner_form_frame, text="Username:", font=("Courier New", 18),
+                fg="white", bg="#1a2a30").grid(row=1, column=0, padx=10, pady=5, sticky=tk.W)
+        self.username_entry = tk.Entry(inner_form_frame, font=("Courier New", 18),
+                                    fg="white", bg="#1a2a30", width=30)
         self.username_entry.grid(row=2, column=0, columnspan=2, padx=10, pady=5)
         self.username_entry.focus_set()
 
         # Password
-        tk.Label(form_frame, text="Password:", font=("Courier New", 18),
-                fg="white", bg="#131f24").grid(row=3, column=0, padx=10, pady=5, sticky=tk.W)
-        self.password_entry = tk.Entry(form_frame, font=("Courier New", 18),
-                                    fg="white", bg="#131f24", show="*", width=30)
+        tk.Label(inner_form_frame, text="Password:", font=("Courier New", 18),
+                fg="white", bg="#1a2a30").grid(row=3, column=0, padx=10, pady=5, sticky=tk.W)
+        self.password_entry = tk.Entry(inner_form_frame, font=("Courier New", 18),
+                                    fg="white", bg="#1a2a30", show="*", width=30)
         self.password_entry.grid(row=4, column=0, columnspan=2, padx=10, pady=5)
         self.password_entry.bind('<KeyRelease>', self.check_enter_key)
 
         cancel_button = tk.Button(
-            form_frame,
+            inner_form_frame,
             text="Cancel",
             font=("Courier New", 18),
             command=self.go_back_to_landing_page,
             fg="white",  # Text color is white
-            bg=form_frame.cget("bg"),  # Same as the background of the frame
+            bg=inner_form_frame.cget("bg"),  # Same as the background of the frame
             relief="flat",  # Flat button with no border
             cursor="hand2"
         )
@@ -202,9 +221,9 @@ class DocuSortApp:
 
         # Next Button (Custom background color #58cc02, white text)
         admin_loginbtn = tk.Button(
-            form_frame,
+            inner_form_frame,
             text="Login",
-            font=("Courier New", 18),
+            font=("Courier New", 18, "bold"),
             command=self.validate_login,
             fg="#131f24",  # Text color is white
             bg="#58cc02",  # Custom background color
@@ -433,6 +452,9 @@ class DocuSortApp:
     def go_back_to_landing_page(self):
         # Clears all widgets on the current page and returns to the landing page
         self.landing_page()
+        self.root.bind("<Key>", self.press_to_start)
+
+        
 
     def format_student_id(self, event):
         entry = self.student_id_entry

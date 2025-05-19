@@ -1511,7 +1511,9 @@ class AdminApp:
 
             from home_with_db import DocuSortApp
             login_window = tk.Toplevel(self.login_root)
-            DocuSortApp(login_window)
+            app_instance = DocuSortApp(login_window)
+            app_instance.press_to_start()
+
         else:
             print("Logout canceled. Returning to Admin Dashboard.")
             messagebox.showinfo("Logout Cancelled", "Returning to Admin Dashboard")

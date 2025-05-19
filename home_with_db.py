@@ -5,8 +5,89 @@ import sqlite3
 from datetime import datetime
 import sys
 import smtplib
+import pigpio
+import RPi.GPIO as GPIO
+import time
+import threading
+
+# Pin Definitions
+servo_pin = 17
+ir_pin = 27
+second_servo_pin = 22
+trig = 23
+echo = 24
+
+# Setup
+pi = pigpio.pi()
+if not pi.connected:
+    sys.exit("Could not connect to pigpio daemon")
+
+# Function to move servo to an angle using pigpio
+def set_angle(angle):
+    pulsewidth = 500 + (angle / 180.0) * 2000  # Maps 0-180 to 500-2500 us
+    pi.set_servo_pulsewidth(servo_pin, pulsewidth)
+
+def set_angle_second_servo(angle):
+    pulsewidth = 500 + (angle / 180.0) * 2000
+    pi.set_servo_pulsewidth(second_servo_pin, pulsewidth)
 
 
+def move_second_servo_with_ir_detection(root):
+    # Move second servo to 90� (open)
+    
+    print("[SUBMIT] Second servo (Pin 22): moved to 90� (open)")
+
+    def wait_for_ir_and_revert():
+        print("[SUBMIT] Waiting for IR detection...")
+        while pi.read(ir_pin) == 1:  # Wait until object is detected (LOW = detected)
+            time.sleep(0.1)
+
+        print("[SUBMIT] IR sensor detected an object!")
+
+        # Show messagebox on the main Tkinter thread
+        root.after(0, lambda: messagebox.showinfo("IR Sensor", "Object Detected!"))
+
+        time.sleep(3)
+    
+            # Move back to 0� (closed)
+        set_angle_second_servo(0)
+        print("[SUBMIT] Second servo (Pin 22): returned to 0� (closed)")
+
+    # Start background detection thread
+    threading.Thread(target=wait_for_ir_and_revert, daemon=True).start()
+
+
+
+# Track last position
+last_angle = None
+
+# Background IR Monitoring Thread (optional)
+import threading
+
+# Set IR pin as input
+pi.set_mode(ir_pin, pigpio.INPUT)
+
+def monitor_ir():
+    global last_angle
+    print("?? System ready. IR sensor watching...")
+    try:
+        while True:
+            ir_state = GPIO.input(ir_pin)
+
+            if ir_state == 0:  # Object detected
+                if last_angle != 180:
+                    print("?? Object detected! Moving to 180�.")
+                    set_angle(60)
+                    last_angle = 60
+            else:
+                if last_angle != 0:
+                    print("?? No object. Moving back to 0�.")
+                    set_angle(0)
+                    last_angle = 0
+
+            time.sleep(0.2)
+    except Exception as e:
+        print(f"IR Monitoring Error: {e}")
 
 # Create the main application window
 class DocuSortApp:
@@ -467,6 +548,7 @@ class DocuSortApp:
         faculty = self.faculty_combobox.get()
         course_list = []
 
+        
         # Mapping of faculty to respective courses
         faculty_degrees = {
             "College of Engineering": [
@@ -480,10 +562,15 @@ class DocuSortApp:
             ]
         }
 
-        # Clear the previous course options and add new ones
-        self.course_combobox.set('')
-        course_list = faculty_degrees.get(faculty, [])
-        self.course_combobox['values'] = course_list
+
+        # Update course combobox
+        if faculty in faculty_degrees:
+            course_list = faculty_degrees[faculty]
+            self.course_combobox['state'] = 'readonly'
+            self.course_combobox['values'] = course_list
+        else:
+            self.course_combobox['state'] = 'disabled'
+            self.course_combobox.set("Select Student's Course")
 
     def save_sender_info(self):
         # Store the entered information in the class variables
@@ -586,14 +673,28 @@ class DocuSortApp:
         self.receiver_first_name = self.receiver_first_name_entry.get()
         self.receiver_last_name = self.receiver_last_name_entry.get()
         self.receiver_faculty = self.receiver_faculty_combobox.get()
-        
+
         # Check if any field is empty
         if not all([self.receiver_first_name, self.receiver_last_name]):
             messagebox.showerror("Missing Information", "Please fill in all the fields before proceeding.")
-            return  # Stop the function if any field is empty
+            return
         if self.receiver_faculty_combobox.get() == "Select Receiver's Faculty":
             messagebox.showerror("Input Error", "Please select a valid faculty.")
             return
+
+        # Move the servo based on sender's selected faculty
+        try:
+            if self.faculty == "College of Engineering":
+                print("[NEXT BUTTON] Servo: Moving to 180� for Engineering")
+                set_angle(120)
+                print("eng bin")
+            elif self.faculty == "College of Business, Entrepreneurial and Accountancy":
+                print("[NEXT BUTTON] Servo: Moving to 0� for CBEA")
+                set_angle(90)
+        except Exception as e:
+            print(f"Servo movement error on next: {e}")
+
+
         # Proceed to preview page
         self.preview_page()
 
@@ -743,7 +844,7 @@ class DocuSortApp:
             # Current timestamp
             current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             doc_type = "Pending"
-            
+
             # Insert the document information into the database
             cursor.execute('''
                 INSERT INTO documents 
@@ -754,6 +855,19 @@ class DocuSortApp:
                 self.first_name, self.last_name, self.student_id, self.section, self.faculty, self.course, student_email,
                 self.receiver_first_name, self.receiver_last_name, self.receiver_faculty, current_time, doc_type
             ))
+
+            conn.commit()
+            conn.close()
+            set_angle_second_servo(35)
+            move_second_servo_with_ir_detection(self.root)
+            # Wait 5 seconds before resetting servo
+            
+
+       
+
+        except Exception as e:
+            print(f"Submit error: {e}")
+            messagebox.showerror("Error", f"An error occurred: {e}")
 
             conn.commit()
             conn.close()

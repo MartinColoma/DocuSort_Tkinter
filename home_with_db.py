@@ -900,8 +900,7 @@ class DocuSortApp:
 
             # Start the IR detection in a way that calls our callback when document is detected
             self.wait_for_document_insertion(callback=on_document_inserted)
-            # self.landing_page()
-            # self.cleartxt_form()
+
 
 
  

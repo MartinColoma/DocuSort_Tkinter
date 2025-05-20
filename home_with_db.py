@@ -16,8 +16,17 @@ import threading
 servo_pin = 17
 ir_pin = 27
 second_servo_pin = 22
-trig = 23
-echo = 24
+
+# Set GPIO mode
+GPIO.setmode(GPIO.BCM)
+
+# Ultrasonic Sensor Pins
+TRIG = 23
+ECHO = 24
+
+# Setup pins
+GPIO.setup(TRIG, GPIO.OUT)
+GPIO.setup(ECHO, GPIO.IN)
 
 # Setup
 pi = pigpio.pi()
@@ -267,8 +276,11 @@ class DocuSortApp:
         sort_label = tk.Label(text_frame, text="Sort", font=("Courier New", 100, "bold"), fg="#58cc02", bg="#131f24")
         sort_label.pack(side=tk.LEFT)
 
-        # Start Button below
-        start_button = tk.Button(frame, text="Press Any Key to Start...", font=("Courier New", 20), command=self.sender_info_page, bg="#131f24", fg="#fff", cursor="hand2", relief="flat")
+        # Modified Start Button
+        start_button = tk.Button(frame, text="Press Any Key to Start...", 
+                                font=("Courier New", 20), 
+                                command=lambda: self.check_distance_and_proceed(), 
+                                bg="#131f24", fg="#fff", cursor="hand2", relief="flat")
         start_button.pack(pady=30)
 
 
@@ -289,7 +301,52 @@ class DocuSortApp:
 
         # Place it in the bottom-right corner with a margin
         admin_button.place(relx=1.0, rely=1.0, anchor="se", x=-30, y=-50)
-
+    
+    #CBEA ulrasonic sensor distance 
+    def get_single_distance(self, timeout=0.02):
+        GPIO.output(TRIG, False)
+        time.sleep(0.000000001)
+        GPIO.output(TRIG, True)
+        time.sleep(0.000000001)
+        GPIO.output(TRIG, False)
+        
+        start_time = time.perf_counter()
+        while GPIO.input(ECHO) == 0:
+            if time.perf_counter() - start_time > timeout:
+                return None
+        pulse_start = time.perf_counter()
+        
+        while GPIO.input(ECHO) == 1:
+            if time.perf_counter() - pulse_start > timeout:
+                return None
+        pulse_end = time.perf_counter()
+        
+        pulse_duration = pulse_end - pulse_start
+        distance = pulse_duration * 17150
+        return round(distance, 2)
+    
+    #Start btn command
+    def check_distance_and_proceed(self):
+        """Check distance and proceed to sender_info_page based on distance conditions"""
+        try:
+            distance = self.get_single_distance()
+            
+            if distance is None:
+                messagebox.showerror("Sensor Error", "Unable to read distance from sensor")
+                return
+            
+            if distance < 18:
+                messagebox.showerror("Bin Full", "Oooops. The bin is at full capacity. Please contact your local admin for support")
+                return
+            elif 18 <= distance <= 30:
+                # Distance is between 18cm and 30cm, proceed without showing messagebox
+                self.sender_info_page()
+            else:  # distance > 30
+                messagebox.showerror("Bin Full", "Oooops. The bin is at full capacity. Please contact your local admin for support")
+                return
+                
+        except Exception as e:
+            messagebox.showerror("Error", f"Sensor error: {str(e)}")
 
     def admin_login_page(self):
         # Clear any previous widgets

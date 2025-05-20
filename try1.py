@@ -5,8 +5,8 @@ import time
 GPIO.setmode(GPIO.BCM)
 
 # Define pin numbers
-TRIG = 23
-ECHO = 24
+TRIG = 20
+ECHO = 21
 
 # Set GPIO pin directions
 GPIO.setup(TRIG, GPIO.OUT)

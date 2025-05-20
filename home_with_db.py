@@ -23,10 +23,18 @@ GPIO.setmode(GPIO.BCM)
 # Ultrasonic Sensor Pins
 TRIG = 23
 ECHO = 24
+TRIG2 = 20  # GPIO 18 for trigger
+ECHO2 = 21  # GPIO 25 for echo
+
+GPIO.setwarnings(False)
+GPIO.cleanup()
+GPIO.setmode(GPIO.BCM)
 
 # Setup pins
 GPIO.setup(TRIG, GPIO.OUT)
 GPIO.setup(ECHO, GPIO.IN)
+GPIO.setup(TRIG2, GPIO.OUT)
+GPIO.setup(ECHO2, GPIO.IN)
 
 # Setup
 pi = pigpio.pi()
@@ -43,35 +51,9 @@ def set_angle_second_servo(angle):
     pi.set_servo_pulsewidth(second_servo_pin, pulsewidth)
 
 
-# def move_second_servo_with_ir_detection(root, app_instance):
-#     # Move second servo to 90� (open)
-    
-#     print("[SUBMIT] Second servo (Pin 22): moved to 90� (open)")
-#     def wait_for_ir_and_revert():
-#         print("[SUBMIT] Waiting for IR detection...")
-#         while pi.read(ir_pin) == 1:  # Wait until object is detected (LOW = detected)
-#             time.sleep(0.1)
-#         print("[SUBMIT] IR sensor detected an object!")
-#         # Show messagebox on the main Tkinter thread
-#         root.after(0, lambda: messagebox.showinfo("IR Sensor", "Object Detected!"))
-#         time.sleep(3)
-    
-#         # Move back to 0� (closed)
-#         set_angle_second_servo(0)
-#         # Use the app_instance to call instance methods
-#         root.after(0, app_instance.landing_page)
-#         root.after(0, app_instance.cleartxt_form)
-#         print("[SUBMIT] Second servo (Pin 22): returned to 0� (closed)")
-    
-#     # Start background detection thread
-#     threading.Thread(target=wait_for_ir_and_revert, daemon=True).start()
-
-
 
 # Track last position
 last_angle = None
-
-
 # Set IR pin as input
 pi.set_mode(ir_pin, pigpio.INPUT)
 
@@ -138,7 +120,7 @@ class DocuSortApp:
             print("[SUBMIT] Second servo (Pin 22): returned to 0� (closed)")
             
             # Return to landing page and clear form
-            self.root.after(0, self.press_to_start)
+            self.root.after(0, self.landing_page)
             self.root.after(0, self.cleartxt_form)
         
         # Start background thread for waiting and closing
@@ -188,10 +170,11 @@ class DocuSortApp:
             return
 
         self.root.unbind("<Key>")  # Unbind the key event to prevent multiple triggers
-        self.sender_info_page()
         self.root.bind("<Escape>", self.exit_fullscreen)
         self.root.bind("<f>", self.toggle_fullscreen)
         self.root.bind("<F>", self.toggle_fullscreen)
+        self.sender_info_page()
+
 
 
             
@@ -279,7 +262,7 @@ class DocuSortApp:
         # Modified Start Button
         start_button = tk.Button(frame, text="Press Any Key to Start...", 
                                 font=("Courier New", 20), 
-                                command=lambda: self.check_distance_and_proceed(), 
+                                command=lambda: self.press_to_start(), 
                                 bg="#131f24", fg="#fff", cursor="hand2", relief="flat")
         start_button.pack(pady=30)
 
@@ -302,7 +285,54 @@ class DocuSortApp:
         # Place it in the bottom-right corner with a margin
         admin_button.place(relx=1.0, rely=1.0, anchor="se", x=-30, y=-50)
     
-    #CBEA ulrasonic sensor distance 
+
+#start
+    # Unified method that checks faculty and uses appropriate sensor
+    def check_distance_and_proceed(self):
+        """Check distance based on selected faculty and proceed accordingly"""
+        try:
+            # Get the selected faculty from combobox
+            selected_faculty = self.receiver_faculty_combobox.get()
+            
+            if selected_faculty == "College of Engineering":
+                # Use 2nd sensor for College of Engineering
+                distance = self.get_single_distance_2()
+                sensor_name = "2nd sensor"
+                max_distance = 36  # College of Engineering uses 50cm as max
+                
+            elif selected_faculty == "College of Business, Entrepreneurial and Accountancy":
+                # Use 1st sensor for College of Business
+                distance = self.get_single_distance()
+                sensor_name = "1st sensor"
+                max_distance = 30  # College of Business uses 30cm as max
+                
+            else:
+                # Default case or no selection
+                messagebox.showerror("Selection Error", "Please select a valid faculty")
+                return
+            
+            # Check if sensor failed to read
+            if distance is None:
+                messagebox.showerror("Sensor Error", f"Unable to read distance from {sensor_name}")
+                return
+            
+            # Check distance conditions
+            if distance < 18:
+                messagebox.showerror("Bin Full", "Oooops. The bin is at full capacity. Please contact your local admin for support")
+                # self.landing_page()
+                return
+            elif 18 <= distance <= max_distance:
+                # Distance is in acceptable range, proceed without showing messagebox
+                self.save_receiver_info()
+            else:  # distance > max_distance
+                messagebox.showerror("Bin Full", "Oooops. The bin is at full capacity. Please contact your local admin for support")
+                # self.landing_page()
+                return
+                
+        except Exception as e:
+            messagebox.showerror("Error", f"Sensor error: {str(e)}")
+    
+    #CBEA
     def get_single_distance(self, timeout=0.02):
         GPIO.output(TRIG, False)
         time.sleep(0.000000001)
@@ -324,29 +354,29 @@ class DocuSortApp:
         pulse_duration = pulse_end - pulse_start
         distance = pulse_duration * 17150
         return round(distance, 2)
-    
-    #Start btn command
-    def check_distance_and_proceed(self):
-        """Check distance and proceed to sender_info_page based on distance conditions"""
-        try:
-            distance = self.get_single_distance()
-            
-            if distance is None:
-                messagebox.showerror("Sensor Error", "Unable to read distance from sensor")
-                return
-            
-            if distance < 18:
-                messagebox.showerror("Bin Full", "Oooops. The bin is at full capacity. Please contact your local admin for support")
-                return
-            elif 18 <= distance <= 30:
-                # Distance is between 18cm and 30cm, proceed without showing messagebox
-                self.sender_info_page()
-            else:  # distance > 30
-                messagebox.showerror("Bin Full", "Oooops. The bin is at full capacity. Please contact your local admin for support")
-                return
-                
-        except Exception as e:
-            messagebox.showerror("Error", f"Sensor error: {str(e)}")
+    #CEng
+    def get_single_distance_2(self, timeout=0.02):
+        GPIO.output(TRIG2, False)
+        time.sleep(0.000000001)
+        GPIO.output(TRIG2, True)
+        time.sleep(0.000000001)
+        GPIO.output(TRIG2, False)
+        
+        start_time = time.perf_counter()
+        while GPIO.input(ECHO2) == 0:
+            if time.perf_counter() - start_time > timeout:
+                return None
+        pulse_start = time.perf_counter()
+        
+        while GPIO.input(ECHO2) == 1:
+            if time.perf_counter() - pulse_start > timeout:
+                return None
+        pulse_end = time.perf_counter()
+        
+        pulse_duration = pulse_end - pulse_start
+        distance = pulse_duration * 17150
+        return round(distance, 2)
+
 
     def admin_login_page(self):
         # Clear any previous widgets
@@ -726,6 +756,7 @@ class DocuSortApp:
         self.receiver_faculty_combobox = ttk.Combobox(inner_form_frame, font=("Courier New", 18), width=38, state="readonly", values=rcvr_faculty_option)
         self.receiver_faculty_combobox.grid(row=4, column=0, columnspan=4, padx=10, pady=5, sticky=tk.W)
         self.receiver_faculty_combobox.set(self.receiver_faculty)
+        self.receiver_faculty_combobox.bind("<<ComboboxSelected>>", lambda event: self.check_distance_and_proceed())
 
 
         # Set placeholder or a previously saved value
@@ -778,11 +809,11 @@ class DocuSortApp:
 
         # Move the servo based on sender's selected faculty
         try:
-            if self.faculty == "College of Engineering":
+            if self.receiver_faculty == "College of Engineering":
                 print("[NEXT BUTTON] Servo: Moving to 180� for Engineering")
                 set_angle(120)
                 print("eng bin")
-            elif self.faculty == "College of Business, Entrepreneurial and Accountancy":
+            elif self.receiver_faculty == "College of Business, Entrepreneurial and Accountancy":
                 print("[NEXT BUTTON] Servo: Moving to 0� for CBEA")
                 set_angle(90)
         except Exception as e:

@@ -129,7 +129,7 @@ class DocuSortApp:
             print("[SUBMIT] Second servo (Pin 22): returned to 0� (closed)")
             
             # Return to landing page and clear form
-            self.root.after(0, self.landing_page)
+            self.root.after(0, self.press_to_start)
             self.root.after(0, self.cleartxt_form)
         
         # Start background thread for waiting and closing

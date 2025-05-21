@@ -395,24 +395,60 @@ class AdminApp:
         pending_nav_frame = tk.Frame(self.pending_table_frame, bg=self.bg_dark)
         pending_nav_frame.pack(fill="x", pady=10)
         
-        # Create a left spacer to push the prev button to the left
+        # Create spacers and containers for better layout
         tk.Frame(pending_nav_frame, bg=self.bg_dark).pack(side="left", expand=True)
         
+        # Previous button
+        self.pending_prev_button = tk.Button(
+            pending_nav_frame, text="← Prev", command=self.pending_prev_page,
+            font=("Courier New", 12), bg=self.bg_dark, fg=self.text_light,
+            borderwidth=0, highlightthickness=0, relief="flat", cursor="hand2"
+        )
+        self.pending_prev_button.pack(side="left", padx=10)
+        
+        # Page number indicators container
+        self.pending_page_indicator_frame = tk.Frame(pending_nav_frame, bg=self.bg_dark)
+        self.pending_page_indicator_frame.pack(side="left")
+        
+        # Page number labels - will be updated dynamically
+        self.pending_page_prev = tk.Label(
+            self.pending_page_indicator_frame, text="", 
+            font=("Courier New", 12), bg=self.bg_dark, fg=self.text_light
+        )
+        self.pending_page_prev.pack(side="left", padx=5)
+        
+        self.pending_page_separator1 = tk.Label(
+            self.pending_page_indicator_frame, text="-", 
+            font=("Courier New", 12), bg=self.bg_dark, fg=self.text_light
+        )
+        self.pending_page_separator1.pack(side="left")
+        
+        self.pending_page_current = tk.Label(
+            self.pending_page_indicator_frame, text="1", 
+            font=("Courier New", 14, "bold"), bg=self.bg_dark, fg=self.accent_green
+        )
+        self.pending_page_current.pack(side="left", padx=5)
+        
+        self.pending_page_separator2 = tk.Label(
+            self.pending_page_indicator_frame, text="-", 
+            font=("Courier New", 12), bg=self.bg_dark, fg=self.text_light
+        )
+        self.pending_page_separator2.pack(side="left")
+        
+        self.pending_page_next = tk.Label(
+            self.pending_page_indicator_frame, text="", 
+            font=("Courier New", 12), bg=self.bg_dark, fg=self.text_light
+        )
+        self.pending_page_next.pack(side="left", padx=5)
+        
+        # Next button
         self.pending_next_button = tk.Button(
             pending_nav_frame, text="Next →", command=self.pending_next_page,
             font=("Courier New", 12), bg=self.bg_dark, fg=self.text_light,
             borderwidth=0, highlightthickness=0, relief="flat", cursor="hand2"
         )
-        self.pending_next_button.pack(side="right", padx=10)
-
-        self.pending_prev_button = tk.Button(
-            pending_nav_frame, text="← Previous", command=self.pending_prev_page,
-            font=("Courier New", 12), bg=self.bg_dark, fg=self.text_light,
-            borderwidth=0, highlightthickness=0, relief="flat", cursor="hand2"
-        )
-        self.pending_prev_button.pack(side="right", padx=10)
-
-        # Create a right spacer to push the next button to the right
+        self.pending_next_button.pack(side="left", padx=10)
+        
         tk.Frame(pending_nav_frame, bg=self.bg_dark).pack(side="left", expand=True)
 
         # RECEIVED DOCUMENTS TABLE
@@ -502,27 +538,64 @@ class AdminApp:
         received_scrollbar.pack(side="right", fill="y")
 
         # Create navigation frame and place it below the table
+        # Update the navigation frame for the received table
         received_nav_frame = tk.Frame(self.received_table_frame, bg=self.bg_dark)
         received_nav_frame.pack(fill="x", pady=10)
-
-        # Create a left spacer to push the prev button to the left
+        
+        # Create spacers and containers for better layout
         tk.Frame(received_nav_frame, bg=self.bg_dark).pack(side="left", expand=True)
         
+        # Previous button
+        self.received_prev_button = tk.Button(
+            received_nav_frame, text="← Prev", command=self.received_prev_page,
+            font=("Courier New", 12), bg=self.bg_dark, fg=self.text_light,
+            borderwidth=0, highlightthickness=0, relief="flat", cursor="hand2"
+        )
+        self.received_prev_button.pack(side="left", padx=10)
+        
+        # Page number indicators container
+        self.received_page_indicator_frame = tk.Frame(received_nav_frame, bg=self.bg_dark)
+        self.received_page_indicator_frame.pack(side="left")
+        
+        # Page number labels - will be updated dynamically
+        self.received_page_prev = tk.Label(
+            self.received_page_indicator_frame, text="", 
+            font=("Courier New", 12), bg=self.bg_dark, fg=self.text_light
+        )
+        self.received_page_prev.pack(side="left", padx=5)
+        
+        self.received_page_separator1 = tk.Label(
+            self.received_page_indicator_frame, text="-", 
+            font=("Courier New", 12), bg=self.bg_dark, fg=self.text_light
+        )
+        self.received_page_separator1.pack(side="left")
+        
+        self.received_page_current = tk.Label(
+            self.received_page_indicator_frame, text="1", 
+            font=("Courier New", 14, "bold"), bg=self.bg_dark, fg="#1976d2"  # Blue color for received
+        )
+        self.received_page_current.pack(side="left", padx=5)
+        
+        self.received_page_separator2 = tk.Label(
+            self.received_page_indicator_frame, text="-", 
+            font=("Courier New", 12), bg=self.bg_dark, fg=self.text_light
+        )
+        self.received_page_separator2.pack(side="left")
+        
+        self.received_page_next = tk.Label(
+            self.received_page_indicator_frame, text="", 
+            font=("Courier New", 12), bg=self.bg_dark, fg=self.text_light
+        )
+        self.received_page_next.pack(side="left", padx=5)
+        
+        # Next button
         self.received_next_button = tk.Button(
             received_nav_frame, text="Next →", command=self.received_next_page,
             font=("Courier New", 12), bg=self.bg_dark, fg=self.text_light,
             borderwidth=0, highlightthickness=0, relief="flat", cursor="hand2"
         )
-        self.received_next_button.pack(side="right", padx=10)
-
-        self.received_prev_button = tk.Button(
-            received_nav_frame, text="← Previous", command=self.received_prev_page,
-            font=("Courier New", 12), bg=self.bg_dark, fg=self.text_light,
-            borderwidth=0, highlightthickness=0, relief="flat", cursor="hand2"
-        )
-        self.received_prev_button.pack(side="right", padx=10)
-
-        # Create a right spacer to push the next button to the right
+        self.received_next_button.pack(side="left", padx=10)
+        
         tk.Frame(received_nav_frame, bg=self.bg_dark).pack(side="left", expand=True)
 
         # Pagination states - set to match table height
@@ -608,215 +681,266 @@ class AdminApp:
         except sqlite3.Error as e:
             messagebox.showerror("Database Error", f"Failed to update documents: {e}", parent=self.root)  
         
-    def load_pending_table(self):
-        # Clear the existing table
-        for row in self.pending_tree.get_children():
-            self.pending_tree.delete(row)
+    def update_pending_page_indicators(self):
+        """Update the pending page number indicators based on current page"""
+        # Calculate total pages
+        total_data = len(self.pending_all_data if self.pending_search_active else self.get_all_pending_data())
+        total_pages = max((total_data - 1) // self.pending_items_per_page + 1, 1)
         
+        # Current page number (1-based for display)
+        current_page = self.pending_page + 1
+        
+        # Update current page display
+        self.pending_page_current.config(text=str(current_page))
+        
+        # Calculate previous and next page numbers
+        prev_page = current_page - 1
+        next_page = current_page + 1
+        
+        # Only show previous page if it exists
+        if prev_page >= 1:
+            self.pending_page_prev.config(text=str(prev_page))
+            self.pending_page_separator1.config(text="-")
+        else:
+            self.pending_page_prev.config(text="")
+            self.pending_page_separator1.config(text="")
+        
+        # Only show next page if it exists
+        if next_page <= total_pages:
+            self.pending_page_next.config(text=str(next_page))
+            self.pending_page_separator2.config(text="-")
+        else:
+            self.pending_page_next.config(text="")
+            self.pending_page_separator2.config(text="")
+        
+        # Enable/disable navigation buttons based on page position
+        self.pending_prev_button.config(state="normal" if current_page > 1 else "disabled")
+        self.pending_next_button.config(state="normal" if current_page < total_pages else "disabled")
+
+    def update_received_page_indicators(self):
+        """Update the received page number indicators based on current page"""
+        # Calculate total pages
+        total_data = len(self.received_all_data if self.received_search_active else self.get_all_received_data())
+        total_pages = max((total_data - 1) // self.received_items_per_page + 1, 1)
+        
+        # Current page number (1-based for display)
+        current_page = self.received_page + 1
+        
+        # Update current page display
+        self.received_page_current.config(text=str(current_page))
+        
+        # Calculate previous and next page numbers
+        prev_page = current_page - 1
+        next_page = current_page + 1
+        
+        # Only show previous page if it exists
+        if prev_page >= 1:
+            self.received_page_prev.config(text=str(prev_page))
+            self.received_page_separator1.config(text="-")
+        else:
+            self.received_page_prev.config(text="")
+            self.received_page_separator1.config(text="")
+        
+        # Only show next page if it exists
+        if next_page <= total_pages:
+            self.received_page_next.config(text=str(next_page))
+            self.received_page_separator2.config(text="-")
+        else:
+            self.received_page_next.config(text="")
+            self.received_page_separator2.config(text="")
+        
+        # Enable/disable navigation buttons based on page position
+        self.received_prev_button.config(state="normal" if current_page > 1 else "disabled")
+        self.received_next_button.config(state="normal" if current_page < total_pages else "disabled")
+
+    def get_all_pending_data(self):
+        """Get all pending documents from database"""
         conn = sqlite3.connect("docusortDB.db")
         cursor = conn.cursor()
         
-        # Always refresh the cached data to ensure it's up to date
         cursor.execute("""
-            SELECT sender_fname, sender_surname, studnum, sender_fac, doc_type, datetime
-            FROM documents
+            SELECT sender_fname, sender_surname, studnum, sender_fac, doc_type, id
+            FROM documents 
             WHERE doc_type = 'Pending'
-            ORDER BY datetime DESC
+            ORDER BY sender_surname, sender_fname
         """)
-        self.pending_all_data = cursor.fetchall()
         
-        # If search is active, we'll display from our filtered data
-        if self.pending_search_active:
-            # Re-filter the data based on current search criteria
-            self.filter_pending_data(self.pending_search_var.get().lower())
-            
-            # Display the current page of filtered data
-            start_idx = self.pending_page * self.pending_items_per_page
-            end_idx = start_idx + self.pending_items_per_page
-            page_data = self.pending_filtered_data[start_idx:end_idx]
-            
-            for row in page_data:
-                self.pending_tree.insert("", "end", values=row)
-            
-            # Update pagination buttons
-            total_rows = len(self.pending_filtered_data)
-        else:
-            # Count for pagination
-            total_rows = len(self.pending_all_data)
-            
-            # Get the current page of data
-            start_idx = self.pending_page * self.pending_items_per_page
-            end_idx = start_idx + self.pending_items_per_page
-            page_data = self.pending_all_data[start_idx:end_idx]
-            
-            for row in page_data:
-                self.pending_tree.insert("", "end", values=row)
-        
+        result = cursor.fetchall()
         conn.close()
-        
-        # Update pagination buttons
-        self.pending_prev_button.config(state="disabled" if self.pending_page == 0 else "normal")
-        self.pending_next_button.config(
-            state="disabled" if (self.pending_page + 1) * self.pending_items_per_page >= total_rows else "normal"
-        )
+        return result
 
+    def get_all_received_data(self):
+        """Get all received documents from database"""
+        conn = sqlite3.connect("docusortDB.db")
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT sender_fname, sender_surname, studnum, sender_fac, doc_type, id
+            FROM documents 
+            WHERE doc_type = 'Received'
+            ORDER BY sender_surname, sender_fname
+        """)
+        
+        result = cursor.fetchall()
+        conn.close()
+        return result
+
+    def load_pending_table(self):
+        """Load pending documents into the pending table with pagination"""
+        # Clear the table
+        for item in self.pending_tree.get_children():
+            self.pending_tree.delete(item)
+        
+        # Get data based on search state
+        if self.pending_search_active:
+            data = self.pending_all_data
+        else:
+            data = self.get_all_pending_data()
+            # Store all data for searching
+            self.pending_all_data = data
+        
+        # Apply pagination
+        start = self.pending_page * self.pending_items_per_page
+        end = start + self.pending_items_per_page
+        page_data = data[start:end]
+        
+        # Insert data into the table
+        for row in page_data:
+            # Display only the first 5 columns (exclude id which is at index 5)
+            self.pending_tree.insert("", "end", values=row[:5], tags=(str(row[5]),))
+        
+        # Update page indicators
+        self.update_pending_page_indicators()
 
     def load_received_table(self):
-        # Clear the existing table
-        for row in self.received_tree.get_children():
-            self.received_tree.delete(row)
-
-        conn = sqlite3.connect("docusortDB.db")
-        cursor = conn.cursor()
-
-        # If search is active, we'll display from our filtered data
+        """Load received documents into the received table with pagination"""
+        # Clear the table
+        for item in self.received_tree.get_children():
+            self.received_tree.delete(item)
+        
+        # Get data based on search state
         if self.received_search_active:
-            # Display the current page of filtered data
-            start_idx = self.received_page * self.received_items_per_page
-            end_idx = start_idx + self.received_items_per_page
-            page_data = self.received_filtered_data[start_idx:end_idx]
-            
-            for row in page_data:
-                self.received_tree.insert("", "end", values=row)
-                
-            # Update pagination buttons
-            total_rows = len(self.received_filtered_data)
+            data = self.received_all_data
         else:
-            # Fetch all data if it's our first load or if search was just cleared
-            if not hasattr(self, 'received_all_data') or not self.received_all_data:
-                cursor.execute("""
-                    SELECT sender_fname, sender_surname, studnum, sender_fac, doc_type, datetime
-                    FROM documents
-                    WHERE doc_type = 'Received'
-                    ORDER BY datetime DESC
-                """)
-                self.received_all_data = cursor.fetchall()
-                
-            # Count for pagination
-            cursor.execute("SELECT COUNT(*) FROM documents WHERE doc_type = 'Received'")
-            total_rows = cursor.fetchone()[0]
-            
-            # Get the current page of data
-            offset = self.received_page * self.received_items_per_page
-            
-            cursor.execute("""
-                SELECT sender_fname, sender_surname, studnum, sender_fac, doc_type, datetime
-                FROM documents
-                WHERE doc_type = 'Received'
-                ORDER BY datetime DESC
-                LIMIT ? OFFSET ?
-            """, (self.received_items_per_page, offset))
-            
-            rows = cursor.fetchall()
-            
-            for row in rows:
-                self.received_tree.insert("", "end", values=row)
-
-        conn.close()
-
-        # Update pagination buttons
-        self.received_prev_button.config(state="disabled" if self.received_page == 0 else "normal")
-        self.received_next_button.config(
-            state="disabled" if (self.received_page + 1) * self.received_items_per_page >= total_rows else "normal"
-        )
-
-
-    def pending_next_page(self):
-        self.pending_page += 1
-        self.load_pending_table()
-
+            data = self.get_all_received_data()
+            # Store all data for searching
+            self.received_all_data = data
+        
+        # Apply pagination
+        start = self.received_page * self.received_items_per_page
+        end = start + self.received_items_per_page
+        page_data = data[start:end]
+        
+        # Insert data into the table
+        for row in page_data:
+            # Display only the first 5 columns (exclude id which is at index 5)
+            self.received_tree.insert("", "end", values=row[:5], tags=(str(row[5]),))
+        
+        # Update page indicators
+        self.update_received_page_indicators()
 
     def pending_prev_page(self):
+        """Navigate to the previous page of pending documents"""
         if self.pending_page > 0:
             self.pending_page -= 1
             self.load_pending_table()
 
-    def received_next_page(self):
-        self.received_page += 1
-        self.load_received_table()
-
+    def pending_next_page(self):
+        """Navigate to the next page of pending documents"""
+        # Calculate total pages
+        total_data = len(self.pending_all_data if self.pending_search_active else self.get_all_pending_data())
+        total_pages = (total_data - 1) // self.pending_items_per_page + 1
+        
+        # Check if there's a next page available
+        if self.pending_page + 1 < total_pages:
+            self.pending_page += 1
+            self.load_pending_table()
 
     def received_prev_page(self):
+        """Navigate to the previous page of received documents"""
         if self.received_page > 0:
             self.received_page -= 1
             self.load_received_table()
 
-    def filter_pending_data(self, search_text):
-        """Helper method to filter pending data based on search text"""
-        self.pending_filtered_data = []
-        for row in self.pending_all_data:
-            # Convert all fields to strings for searching
-            row_string = ' '.join([str(item).lower() for item in row])
-            if search_text in row_string:
-                self.pending_filtered_data.append(row)
+    def received_next_page(self):
+        """Navigate to the next page of received documents"""
+        # Calculate total pages
+        total_data = len(self.received_all_data if self.received_search_active else self.get_all_received_data())
+        total_pages = (total_data - 1) // self.received_items_per_page + 1
+        
+        # Check if there's a next page available
+        if self.received_page + 1 < total_pages:
+            self.received_page += 1
+            self.load_received_table()
 
     def search_pending_documents(self, search_var):
-        """Filter pending documents based on search text"""
+        """Search within pending documents"""
         search_text = search_var.get().lower()
         
-        if not search_text:
+        if search_text.strip() == "":
+            # If search is empty, clear search mode
             self.pending_search_active = False
             self.pending_page = 0  # Reset to first page
             self.load_pending_table()
             return
-        
-        # Make sure pending_all_data is up to date
-        if not hasattr(self, 'pending_all_data') or self.pending_all_data is None:
-            conn = sqlite3.connect("docusortDB.db")
-            cursor = conn.cursor()
-            cursor.execute("""
-                SELECT sender_fname, sender_surname, studnum, sender_fac, doc_type, datetime
-                FROM documents
-                WHERE doc_type = 'Pending'
-                ORDER BY datetime DESC
-            """)
-            self.pending_all_data = cursor.fetchall()
-            conn.close()
-        
-        # Filter the data
-        self.filter_pending_data(search_text)
-        
+            
+        # Set search mode active
         self.pending_search_active = True
-        self.pending_page = 0  # Reset to first page
+        
+        # Get all data if not already fetched
+        if not self.pending_all_data:
+            self.pending_all_data = self.get_all_pending_data()
+        
+        # Filter data based on search text
+        filtered_data = []
+        for row in self.pending_all_data:
+            # Search in sender first name, sender surname, student number, and faculty
+            if (search_text in str(row[0]).lower() or  # sender_fname
+                search_text in str(row[1]).lower() or  # sender_surname
+                search_text in str(row[2]).lower() or  # studnum
+                search_text in str(row[3]).lower()):   # sender_fac
+                filtered_data.append(row)
+        
+        # Update filtered data and reset to first page
+        self.pending_all_data = filtered_data
+        self.pending_page = 0
         self.load_pending_table()
 
     def search_received_documents(self, search_var):
-        """Filter received documents based on search text"""
+        """Search within received documents"""
         search_text = search_var.get().lower()
         
-        if not search_text:
+        if search_text.strip() == "":
+            # If search is empty, clear search mode
             self.received_search_active = False
             self.received_page = 0  # Reset to first page
             self.load_received_table()
             return
-        
-        # Make sure we have all data to search through
-        if not hasattr(self, 'received_all_data') or not self.received_all_data:
-            conn = sqlite3.connect("docusortDB.db")
-            cursor = conn.cursor()
-            cursor.execute("""
-                SELECT sender_fname, sender_surname, studnum, sender_fac, doc_type, datetime
-                FROM documents
-                WHERE doc_type = 'Received'
-                ORDER BY datetime DESC
-            """)
-            self.received_all_data = cursor.fetchall()
-            conn.close()
-        
-        # Filter the data
-        self.received_filtered_data = []
-        for row in self.received_all_data:
-            # Convert all fields to strings for searching
-            row_string = ' '.join([str(item).lower() for item in row])
-            if search_text in row_string:
-                self.received_filtered_data.append(row)
-        
+            
+        # Set search mode active
         self.received_search_active = True
-        self.received_page = 0  # Reset to first page
+        
+        # Get all data if not already fetched
+        if not self.received_all_data:
+            self.received_all_data = self.get_all_received_data()
+        
+        # Filter data based on search text
+        filtered_data = []
+        for row in self.received_all_data:
+            # Search in sender first name, sender surname, student number, and faculty
+            if (search_text in str(row[0]).lower() or  # sender_fname
+                search_text in str(row[1]).lower() or  # sender_surname
+                search_text in str(row[2]).lower() or  # studnum
+                search_text in str(row[3]).lower()):   # sender_fac
+                filtered_data.append(row)
+        
+        # Update filtered data and reset to first page
+        self.received_all_data = filtered_data
+        self.received_page = 0
         self.load_received_table()
 
     def clear_search(self, table_type):
-        """Clear search and reset to normal table view"""
+        """Clear search field and reset table view"""
         if table_type == "pending":
             self.pending_search_var.set("")
             self.pending_search_active = False

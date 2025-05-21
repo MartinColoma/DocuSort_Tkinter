@@ -369,11 +369,6 @@ class DocuSortApp:
             "Select Student's Faculty",  # <-- Placeholder
             "College of Engineering", 
             "College of Business, Entrepreneurial and Accountancy",
-            "Institute of Computer Studies",
-            "Institute of Architecture",
-            "College of Education",
-            "College of Arts and Sciences",
-            "Institute of Human Kinetics"
         ]
 
         self.faculty_combobox = ttk.Combobox(
@@ -404,6 +399,7 @@ class DocuSortApp:
         # Set course placeholder or value if available
         if hasattr(self, "course") and self.course:
             self.course_combobox.set(self.course)
+
         else:
             self.course_combobox.set("Select Student's Course")  # Optional placeholder
 
@@ -478,20 +474,10 @@ class DocuSortApp:
                 "B.S. in Electronics Engineering", "B.S. in Computer Engineering", "B.S. in Industrial Engineering",
                 "B.S. in Instrumentation and Control Engineering", "B.S. in Mechatronics"
             ],
-            "Institute of Computer Studies": ["B.S. in Information Technology"],
-            "Institute of Architecture": ["B.S. in Architecture"],
             "College of Business, Entrepreneurial and Accountancy": [
                 "B.S. in Accountancy", "B.S. in Business Administration", "B.S. in Entrepreneurship",
                 "B.S. in Hospitality Management"
-            ],
-            "College of Education": [
-                "B.S. in Secondary Education", "B.S. in Elementary Education", "B.S. in Early Childhood Education",
-                "B.S. in Physical Education"
-            ],
-            "College of Arts and Sciences": [
-                "A.B. in Political Science", "A.B. in Communication", "B.S. in Psychology", "B.S. in Biology", "B.S. in Mathematics"
-            ],
-            "Institute of Human Kinetics": ["B.S. in Exercise and Sports Sciences", "B.S. in Physical Education"]
+            ]
         }
 
         # Clear the previous course options and add new ones

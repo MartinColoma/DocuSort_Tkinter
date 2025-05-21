@@ -181,7 +181,7 @@ class AdminApp:
             self.received_table_frame.pack_forget()
             
             # Reload the pending table data
-            self.load_pending_table()
+            self.clear_search("pending")
         
         def show_received_table():
             self.pending_card.config(bg="#2e7d32", relief="flat")  # Darker green for inactive
@@ -196,7 +196,7 @@ class AdminApp:
             self.received_table_frame.pack(fill="both", expand=True)
             
             # Reload the received table data
-            self.load_received_table()
+            self.clear_search("received")
         
         # Pending Documents Card
         self.pending_card = tk.Frame(

@@ -2,6 +2,8 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
 from PIL import Image, ImageTk
+from datetime import datetime  
+
 
 
 class AdminApp:
@@ -753,92 +755,92 @@ class AdminApp:
         self.received_prev_button.config(state="normal" if current_page > 1 else "disabled")
         self.received_next_button.config(state="normal" if current_page < total_pages else "disabled")
 
+    # ------------------ GET ALL PENDING DATA ------------------
     def get_all_pending_data(self):
-        """Get all pending documents from database"""
         conn = sqlite3.connect("docusortDB.db")
         cursor = conn.cursor()
-        
         cursor.execute("""
-            SELECT sender_fname, sender_surname, studnum, sender_fac, doc_type, id
+            SELECT sender_fname, sender_surname, studnum, sender_fac, doc_type, datetime, id
             FROM documents 
             WHERE doc_type = 'Pending'
-            ORDER BY sender_surname, sender_fname
         """)
-        
         result = cursor.fetchall()
         conn.close()
         return result
 
-    def get_all_received_data(self):
-        """Get all received documents from database"""
-        conn = sqlite3.connect("docusortDB.db")
-        cursor = conn.cursor()
-        
-        cursor.execute("""
-            SELECT sender_fname, sender_surname, studnum, sender_fac, doc_type, id
-            FROM documents 
-            WHERE doc_type = 'Received'
-            ORDER BY sender_surname, sender_fname
-        """)
-        
-        result = cursor.fetchall()
-        conn.close()
-        return result
-
+    # ------------------ LOAD PENDING TABLE ------------------
     def load_pending_table(self):
-        """Load pending documents into the pending table with pagination"""
-        # Clear the table
         for item in self.pending_tree.get_children():
             self.pending_tree.delete(item)
-        
-        # Get data based on search state
+
         if self.pending_search_active:
             data = self.pending_all_data
         else:
             data = self.get_all_pending_data()
-            # Store all data for searching
             self.pending_all_data = data
-        
-        # Apply pagination
+
+        def get_datetime(row):
+            dt_str = row[5]  # datetime is index 5
+            try:
+                return datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
+            except (ValueError, TypeError):
+                return datetime.min
+
+        sorted_data = sorted(data, key=get_datetime, reverse=True)
+
         start = self.pending_page * self.pending_items_per_page
         end = start + self.pending_items_per_page
-        page_data = data[start:end]
-        
-        # Insert data into the table
+        page_data = sorted_data[start:end]
+
         for row in page_data:
-            # Display only the first 5 columns (exclude id which is at index 5)
-            self.pending_tree.insert("", "end", values=row[:5], tags=(str(row[5]),))
-        
-        # Update page indicators
+            self.pending_tree.insert("", "end", values=(row[0], row[1], row[2], row[3], row[4]), tags=(str(row[6]),))
+
         self.update_pending_page_indicators()
 
+    # ------------------ GET ALL RECEIVED DATA ------------------
+    def get_all_received_data(self):
+        conn = sqlite3.connect("docusortDB.db")
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT sender_fname, sender_surname, studnum, sender_fac, doc_type, datetime, id
+            FROM documents 
+            WHERE doc_type = 'Received'
+        """)
+        result = cursor.fetchall()
+        conn.close()
+        return result
+
+    # ------------------ LOAD RECEIVED TABLE ------------------
     def load_received_table(self):
-        """Load received documents into the received table with pagination"""
-        # Clear the table
         for item in self.received_tree.get_children():
             self.received_tree.delete(item)
-        
-        # Get data based on search state
+
         if self.received_search_active:
             data = self.received_all_data
         else:
             data = self.get_all_received_data()
-            # Store all data for searching
             self.received_all_data = data
-        
-        # Apply pagination
+
+        def get_datetime(row):
+            dt_str = row[5]  # datetime is index 5
+            try:
+                return datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
+            except (ValueError, TypeError):
+                return datetime.min
+
+        sorted_data = sorted(data, key=get_datetime, reverse=True)
+
         start = self.received_page * self.received_items_per_page
         end = start + self.received_items_per_page
-        page_data = data[start:end]
-        
-        # Insert data into the table
+        page_data = sorted_data[start:end]
+
         for row in page_data:
-            # Display only the first 5 columns (exclude id which is at index 5)
-            self.received_tree.insert("", "end", values=row[:5], tags=(str(row[5]),))
-        
-        # Update page indicators
+            self.received_tree.insert("", "end", values=(row[0], row[1], row[2], row[3], row[4]), tags=(str(row[6]),))
+
         self.update_received_page_indicators()
 
+
+          
     def pending_prev_page(self):
         """Navigate to the previous page of pending documents"""
         if self.pending_page > 0:

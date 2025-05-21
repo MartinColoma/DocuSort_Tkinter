@@ -446,7 +446,7 @@ class DocuSortApp:
 
 
     def go_back_to_landing_page(self):
-        # Clears all widgets on the current page and returns to the landing page
+        self.root.focus_set()
         self.landing_page()
         self.root.bind("<Key>", self.press_to_start)
 

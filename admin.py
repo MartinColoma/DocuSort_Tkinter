@@ -1639,17 +1639,11 @@ class AdminApp:
             from home_with_db import DocuSortApp
             login_window = tk.Toplevel(self.login_root)
             app_instance = DocuSortApp(login_window)
-
-            # Bind keypress, but don't call the function directly
-            login_window.bind("<Key>", app_instance.press_to_start)
-
+            app_instance.go_back_to_landing_page()
         else:
             print("Logout canceled. Returning to Admin Dashboard.")
             messagebox.showinfo("Logout Cancelled", "Returning to Admin Dashboard")
             self.switch_page(self.show_dashboard, "Dashboard")
-
-
-
 
 if __name__ == "__main__":
     root = tk.Tk()

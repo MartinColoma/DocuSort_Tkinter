@@ -304,10 +304,11 @@ class AdminApp:
         )
         # Don't pack yet - we'll control visibility with show/hide functions
         
-        # Add search bar for pending documents
+        # Add combined frame for search bar and quick action button
         pending_search_frame = tk.Frame(self.pending_table_frame, bg=self.bg_dark)
-        pending_search_frame.pack(fill="x", pady=(5, 10))
-        
+        pending_search_frame.pack(fill="x", pady=(5, 10), padx=10)
+
+        # Search Label
         search_label = tk.Label(
             pending_search_frame, 
             text="Search:", 
@@ -315,41 +316,62 @@ class AdminApp:
             bg=self.bg_dark,
             fg=self.text_light
         )
-        search_label.pack(side="left", padx=(0, 10))
-        
+        search_label.pack(side="left", padx=(0, 5))
+
+        # Container to overlap Entry + Clear Button
+        pending_entry_container = tk.Frame(pending_search_frame, bg=self.bg_dark)
+        pending_entry_container.pack(side="left")
+
+        # Search Variable and Entry
         self.pending_search_var = tk.StringVar()
         self.pending_search_var.trace("w", lambda name, index, mode, sv=self.pending_search_var: self.search_pending_documents(sv))
-        
+
         self.pending_search_entry = tk.Entry(
-            pending_search_frame,
+            pending_entry_container,
             textvariable=self.pending_search_var,
             font=("Courier New", 12),
             bg="#2a2a2a",
             fg=self.text_light,
-            insertbackground=self.text_light,  # Cursor color
+            insertbackground=self.text_light,
             relief="flat",
             highlightthickness=1,
             highlightbackground="#555555",
             highlightcolor=self.accent_green,
-            width=40,
+            width=30  # Reduced width for compact layout
         )
-        self.pending_search_entry.pack(side="left", fill="x", expand=True)
-        
+        self.pending_search_entry.pack()
+
+        # Clear Search Button (positioned over entry)
         search_clear_button = tk.Button(
-            pending_search_frame,
+            pending_entry_container,
             text="✕",
             font=("Courier New", 10),
-            bg=self.bg_dark,
+            bg="#2a2a2a",  # Same as entry background for seamless look
             fg=self.text_light,
-            activebackground="#444444",
+            activebackground="#3a3a3a",
             activeforeground=self.text_light,
             relief="flat",
             borderwidth=0,
-            command=lambda: self.clear_search("pending")
+            command=lambda: self.clear_search("pending"),
+            cursor="hand2"
         )
-        search_clear_button.pack(side="left", padx=(5, 0))
+        search_clear_button.place(relx=1.0, rely=0.5, x=-3, y=-1, anchor="e", width=20, height=20)
+
+        # Convert All Button
+        convert_all_btn = tk.Button(
+            pending_search_frame,
+            text="Mark ALL Pending as Received",
+            font=("Courier New", 12, "bold"),
+            bg="#1976d2",  # Blue
+            fg=self.text_light,
+            padx=15,
+            pady=3,
+            relief="flat",
+            cursor="hand2",
+            command=self.convert_all_pending_to_received
+        )
+        convert_all_btn.pack(side="right")
                 
-        self.add_convert_all_button()
         # Create a container for the table and scrollbar
         pending_table_container = tk.Frame(self.pending_table_frame, bg=self.bg_dark)
         pending_table_container.pack(fill="both", expand=True)
@@ -407,8 +429,9 @@ class AdminApp:
         
         # Add search bar for received documents
         received_search_frame = tk.Frame(self.received_table_frame, bg=self.bg_dark)
-        received_search_frame.pack(fill="x", pady=(5, 10))
-        
+        received_search_frame.pack(fill="x", pady=(5, 10), padx=10)
+
+        # Label
         search_label = tk.Label(
             received_search_frame, 
             text="Search:", 
@@ -416,39 +439,48 @@ class AdminApp:
             bg=self.bg_dark,
             fg=self.text_light
         )
-        search_label.pack(side="left", padx=(0, 10))
-        
+        search_label.pack(side="left", padx=(0, 5))
+
+        # Entry container for input and button
+        entry_container = tk.Frame(received_search_frame, bg=self.bg_dark)
+        entry_container.pack(side="left")
+
+        # StringVar and Entry field (narrower width)
         self.received_search_var = tk.StringVar()
         self.received_search_var.trace("w", lambda name, index, mode, sv=self.received_search_var: self.search_received_documents(sv))
-        
+
         self.received_search_entry = tk.Entry(
-            received_search_frame,
+            entry_container,
             textvariable=self.received_search_var,
             font=("Courier New", 12),
             bg="#2a2a2a",
             fg=self.text_light,
-            insertbackground=self.text_light,  # Cursor color
+            insertbackground=self.text_light,
             relief="flat",
             highlightthickness=1,
             highlightbackground="#555555",
             highlightcolor="#1976d2",
-            width=40
+            width=30  # 👈 Reduce width (adjust as needed)
         )
-        self.received_search_entry.pack(side="left", fill="x", expand=True)
-        
+        self.received_search_entry.pack()
+
+        # Clear Button (✕) placed inside the container
         search_clear_button = tk.Button(
-            received_search_frame,
+            entry_container,
             text="✕",
             font=("Courier New", 10),
-            bg=self.bg_dark,
+            bg="#2a2a2a",
             fg=self.text_light,
-            activebackground="#444444",
+            activebackground="#3a3a3a",
             activeforeground=self.text_light,
             relief="flat",
             borderwidth=0,
-            command=lambda: self.clear_search("received")
+            command=lambda: self.clear_search("received"),
+            cursor="hand2"
         )
-        search_clear_button.pack(side="left", padx=(5, 0))
+        # Position over Entry (tightly aligned to right)
+        search_clear_button.place(relx=1.0, rely=0.5, x=-3, y=-1, anchor="e", width=20, height=20)
+
 
         # Create a container for the table and scrollbar
         received_table_container = tk.Frame(self.received_table_frame, bg=self.bg_dark)
@@ -516,36 +548,6 @@ class AdminApp:
         
         self.create_table_context_menu()
 
-    def add_convert_all_button(self):
-        """Add a button to convert all pending documents to received"""
-        # Create a button frame between the search bar and the table
-        button_frame = tk.Frame(self.pending_table_frame, bg=self.bg_dark)
-        button_frame.pack(fill="x", pady=(5, 10))
-        
-        # Create left-aligned label explaining the button's purpose
-        info_label = tk.Label(
-            button_frame,
-            text="Quick Actions:",
-            font=("Courier New", 12),
-            bg=self.bg_dark,
-            fg=self.text_light
-        )
-        info_label.pack(side="left", padx=10)
-        
-        # Create the Convert All button
-        convert_all_btn = tk.Button(
-            button_frame,
-            text="Mark ALL Pending as Received",
-            font=("Courier New", 12, "bold"),
-            bg="#1976d2",  # Blue for receive
-            fg=self.text_light,
-            padx=15,
-            pady=5,
-            relief="flat",
-            cursor="hand2",
-            command=self.convert_all_pending_to_received
-        )
-        convert_all_btn.pack(side="left", padx=10)
 
     def convert_all_pending_to_received(self):
         """Convert all pending documents to received status"""
@@ -1513,12 +1515,15 @@ class AdminApp:
             from home_with_db import DocuSortApp
             login_window = tk.Toplevel(self.login_root)
             app_instance = DocuSortApp(login_window)
-            app_instance.press_to_start()
+
+            # Bind keypress, but don't call the function directly
+            login_window.bind("<Key>", app_instance.press_to_start)
 
         else:
             print("Logout canceled. Returning to Admin Dashboard.")
             messagebox.showinfo("Logout Cancelled", "Returning to Admin Dashboard")
             self.switch_page(self.show_dashboard, "Dashboard")
+
 
 
 

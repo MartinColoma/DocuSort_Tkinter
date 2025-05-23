@@ -7,8 +7,9 @@ from datetime import datetime
 
 
 class AdminApp:
-    def __init__(self, login_root):
+    def __init__(self, login_root, current_user=None):
         self.login_root = login_root
+        self.current_user_username = current_user  
         self.page = 0
         self.items_per_page = 10
 
@@ -196,7 +197,7 @@ class AdminApp:
             self.received_table_frame.pack(fill="both", expand=True)
             
             # Reload the received table data
-            self.clear_search("received")
+            self.clear_search("received ")
         
         # Pending Documents Card
         self.pending_card = tk.Frame(
@@ -1301,8 +1302,8 @@ class AdminApp:
         users_frame = tk.Frame(self.content_frame, bg=self.bg_dark)
         users_frame.pack(padx=10, pady=10, fill="none", expand=False)
 
-        # Create admin users table
-        columns = ("id", "username", "role", "date_created", "last_login")
+        # Create admin users table with additional columns for Full Name and Email
+        columns = ("id", "fullname", "admin_email", "username", "role", "date_created", "last_login")
         self.admin_tree = ttk.Treeview(users_frame, columns=columns, show="headings", height=8)
 
         for col in columns:
@@ -1310,6 +1311,7 @@ class AdminApp:
             self.admin_tree.column(col, anchor="center", width=140)
 
         self.admin_tree.pack(pady=10)
+
 
         # Load sample or actual admin users
         self.load_admin_users()
@@ -1349,18 +1351,20 @@ class AdminApp:
             # Connect to the database
             conn = sqlite3.connect("docusortDB.db")
             cursor = conn.cursor()
-            
+
             # Check if admin_users table exists
             cursor.execute("""
                 SELECT name FROM sqlite_master 
                 WHERE type='table' AND name='admin_users'
             """)
-            
+
             if not cursor.fetchone():
                 # Create table if it doesn't exist
                 cursor.execute("""
                     CREATE TABLE admin_users (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        fullname TEXT UNIQUE NOT NULL,
+                        admin_email TEXT UNIQUE NOT NULL,
                         username TEXT UNIQUE NOT NULL,
                         password TEXT NOT NULL,
                         role TEXT NOT NULL,
@@ -1369,60 +1373,86 @@ class AdminApp:
                     )
                 """)
                 conn.commit()
-                
+
                 # Insert default admin if table was just created
                 cursor.execute("""
-                    INSERT INTO admin_users (username, password, role, date_created)
-                    VALUES (?, ?, ?, datetime('now'))
-                """, ("admin", "admin123", "Super Admin"))
+                    INSERT INTO admin_users (fullname, admin_email, username, password, role, date_created)
+                    VALUES (?, ?, ?, ?, ?, datetime('now'))
+                """, ("Administrator", "admin@example.com", "admin", "admin123", "Super Admin"))
                 conn.commit()
-            
-            # Get admin users
+
+            # Get admin users (include fullname and admin_email)
             cursor.execute("""
-                SELECT id, username, role, date_created, last_login
+                SELECT id, fullname, admin_email, username, role, date_created, last_login
                 FROM admin_users
                 ORDER BY id
             """)
-            
+
             admin_users = cursor.fetchall()
             conn.close()
-            
-            # Insert into treeview
+
+            # Insert into Treeview
             for user in admin_users:
                 self.admin_tree.insert("", "end", values=user)
-                
+
         except sqlite3.Error as e:
             messagebox.showerror("Database Error", f"Failed to load admin users: {e}")
+
             
+
     def delete_admin_user(self):
+        from tkinter.simpledialog import askstring
         selected_item = self.admin_tree.selection()
         if not selected_item:
             messagebox.showwarning("No Selection", "Please select an admin user to delete.", parent=self.root)
             return
-            
+
         user_id = self.admin_tree.item(selected_item[0], 'values')[0]
         username = self.admin_tree.item(selected_item[0], 'values')[1]
-        
-        # Confirm deletion
-        confirm = messagebox.askyesno("Confirm Delete", 
-                                      f"Are you sure you want to delete admin user '{username}'?", 
-                                      parent=self.root)
-        if not confirm:
+    
+
+        # Prompt for password
+        password_input = askstring("Password Required", "Enter your password to confirm deletion:", show="*", parent=self.root)
+        if not password_input:
+            messagebox.showwarning("Cancelled", "Deletion cancelled.", parent=self.root)
             return
-            
+
         try:
+            # Check password of the currently logged-in user
             conn = sqlite3.connect("docusortDB.db")
             cursor = conn.cursor()
-            
+
+            cursor.execute("SELECT password FROM admin_users WHERE username = ?", (self.current_user_username,))
+            result = cursor.fetchone()
+
+            if result is None:
+                messagebox.showerror("Error", "Your account was not found.", parent=self.root)
+                conn.close()
+                return
+
+            correct_password = result[0]
+            if password_input != correct_password:
+                messagebox.showerror("Authentication Failed", "Incorrect password. Deletion cancelled.", parent=self.root)
+                conn.close()
+                return
+
+            # Confirm deletion
+            confirm = messagebox.askyesno("Confirm Delete", 
+                                        f"Are you sure you want to delete admin user '{username}'?", 
+                                        parent=self.root)
+            if not confirm:
+                conn.close()
+                return
+
             # Delete user
             cursor.execute("DELETE FROM admin_users WHERE id = ?", (user_id,))
             conn.commit()
             conn.close()
-            
-            # Refresh the list
+
+            # Refresh list
             self.load_admin_users()
             messagebox.showinfo("Success", f"Admin user '{username}' has been deleted.", parent=self.root)
-            
+
         except sqlite3.Error as e:
             messagebox.showerror("Database Error", f"Failed to delete admin user: {e}", parent=self.root)
             
@@ -1431,7 +1461,7 @@ class AdminApp:
         add_window = tk.Toplevel(self.root)
         add_window.title("Add New Admin User")
         add_window.configure(bg=self.bg_dark)
-        add_window.geometry("400x450")
+        add_window.geometry("400x575")
         add_window.resizable(False, False)
         
         # Make it modal
@@ -1450,6 +1480,50 @@ class AdminApp:
         # Form container
         form_frame = tk.Frame(add_window, bg=self.bg_dark, padx=30, pady=10)
         form_frame.pack(fill="both")
+
+        # First and Last Name
+        tk.Label(
+            form_frame,
+            text="Full Name:",
+            font=("Courier New", 12),
+            bg=self.bg_dark,
+            fg=self.text_light,
+            anchor="w"
+        ).pack(fill="x", pady=(10, 0))
+        
+        fullname_var = tk.StringVar()
+        fullname_entry = tk.Entry(
+            form_frame,
+            font=("Courier New", 12),
+            bg=self.secondary_bg,
+            fg=self.text_light,
+            insertbackground=self.text_light,
+            textvariable=fullname_var
+        )
+        fullname_entry.pack(fill="x", pady=(0, 10))
+        fullname_entry.focus_set()
+        
+        # Email
+        tk.Label(
+            form_frame,
+            text="Email:",
+            font=("Courier New", 12),
+            bg=self.bg_dark,
+            fg=self.text_light,
+            anchor="w"
+        ).pack(fill="x", pady=(10, 0))
+                
+        
+        admin_email_var = tk.StringVar()
+        admin_email_entry = tk.Entry(
+            form_frame,
+            font=("Courier New", 12),
+            bg=self.secondary_bg,
+            fg=self.text_light,
+            insertbackground=self.text_light,
+            textvariable=admin_email_var
+        )
+        admin_email_entry.pack(fill="x", pady=(0, 10))
         
         # Username
         tk.Label(
@@ -1540,26 +1614,7 @@ class AdminApp:
         # Button frame
         button_frame = tk.Frame(add_window, bg=self.bg_dark, pady=10)
         button_frame.pack()
-        
-        # Register button
-        register_btn = tk.Button(
-            button_frame,
-            text="Register Admin",
-            font=("Courier New", 12, "bold"),
-            bg=self.accent_green,
-            fg=self.text_light,
-            padx=15,
-            pady=5,
-            command=lambda: self.register_admin(
-                username_var.get(),
-                password_var.get(),
-                confirm_var.get(),
-                role_var.get(),
-                add_window
-            )
-        )
-        register_btn.pack(side="left", padx=10)
-        
+
         # Cancel button
         cancel_btn = tk.Button(
             button_frame,
@@ -1571,53 +1626,82 @@ class AdminApp:
             pady=5,
             command=add_window.destroy
         )
-        cancel_btn.pack(side="left", padx=10)
+        cancel_btn.pack(side="left", padx=10)        
+        # Register button
+        register_btn = tk.Button(
+            button_frame,
+            text="Register Admin",
+            font=("Courier New", 12, "bold"),
+            bg=self.accent_green,
+            fg=self.text_light,
+            padx=15,
+            pady=5,
+            command=lambda: self.register_admin(
+                fullname_var.get(),
+                admin_email_var.get(),
+                username_var.get(),
+                password_var.get(),
+                confirm_var.get(),
+                role_var.get(),
+                add_window
+            )
+        )
+        register_btn.pack(side="left", padx=10)
         
-        # Focus on the first field
-        username_entry.focus_set()
+
         
-    def register_admin(self, username, password, confirm, role, window):
+
+        
+    def register_admin(self, fullname, admin_email, username, password, confirm, role, window):
         # Validate inputs
-        if not username or not password or not confirm:
+        if not fullname or not admin_email or not username or not password or not confirm:
             messagebox.showerror("Error", "All fields must be filled", parent=window)
             return
-            
+
         if password != confirm:
             messagebox.showerror("Error", "Passwords do not match", parent=window)
             return
-            
-        if len(password) < 6:
-            messagebox.showerror("Error", "Password must be at least 6 characters", parent=window)
+
+        if len(password) < 8:
+            messagebox.showerror("Error", "Password must be at least 8 characters", parent=window)
             return
-            
+
         try:
             conn = sqlite3.connect("docusortDB.db")
             cursor = conn.cursor()
-            
-            # Check if username already exists
+
+            # Check if FULL NAME already exists
+            cursor.execute("SELECT id FROM admin_users WHERE fullname = ?", (fullname,))
+            if cursor.fetchone():
+                messagebox.showerror("Error", "Full Name already exists", parent=window)
+                conn.close()
+                return
+
+            # Check if USERNAME already exists
             cursor.execute("SELECT id FROM admin_users WHERE username = ?", (username,))
             if cursor.fetchone():
                 messagebox.showerror("Error", "Username already exists", parent=window)
                 conn.close()
                 return
-                
+
             # Insert new admin user
             cursor.execute("""
-                INSERT INTO admin_users (username, password, role, date_created)
-                VALUES (?, ?, ?, datetime('now'))
-            """, (username, password, role))
-            
+                INSERT INTO admin_users (fullname, admin_email, username, password, role, date_created)
+                VALUES (?, ?, ?, ?, ?, datetime('now'))
+            """, (fullname, admin_email, username, password, role))
+
             conn.commit()
             conn.close()
-            
+
             messagebox.showinfo("Success", "New admin user registered successfully", parent=window)
             window.destroy()
-            
+
             # Refresh the admin users list
             self.load_admin_users()
-            
+
         except sqlite3.Error as e:
             messagebox.showerror("Database Error", f"Failed to register admin: {e}", parent=window)
+
 
 
     def update_content(self, title, message):

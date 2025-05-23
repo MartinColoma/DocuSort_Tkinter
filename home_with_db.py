@@ -505,6 +505,8 @@ class DocuSortApp:
                 
                 # Show success message with user role
                 messagebox.showinfo("Login Successful", f"Welcome {user[1]}! ({user[2]})")
+                    # Print login info to the terminal
+                print(f"User '{user[1]}' has logged in successfully.")
                 
                 # Hide the login window
                 self.root.withdraw()
@@ -513,7 +515,9 @@ class DocuSortApp:
                 from admin import AdminApp
                 
                 admin_window = tk.Toplevel(self.root)
-                AdminApp(admin_window)
+                AdminApp(admin_window, current_user=user[1])
+
+
             else:
                 conn.close()
                 messagebox.showerror("Login Failed", "Incorrect Username or Password")
@@ -965,7 +969,7 @@ class DocuSortApp:
 
             # Only send email if not in testing mode
             email_sent = False
-            if not getattr(self, 'testing_mode', True):  # You can add a testing_mode flag
+            if not getattr(self, 'testing_mode', False):  # You can add a testing_mode flag
                 email_sent = self.send_receipt_email(student_email, current_time)
 
             # First, prompt user to insert document

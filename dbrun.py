@@ -15,9 +15,10 @@ def initialize_database():
             sender_fac TEXT NOT NULL,
             sender_course TEXT NOT NULL,
             sender_email TEXT NOT NULL,
-            rcvr_fname TEXT NOT NULL,
-            rcvr_surname TEXT NOT NULL,
             rcvr_fac TEXT NOT NULL,
+            rcvr_name TEXT NOT NULL,
+            rcvr_email TEXT NOT NULL,
+            doc_description TEXT NOT NULL,
             datetime TEXT NOT NULL,
             doc_type TEXT NOT NULL
         )

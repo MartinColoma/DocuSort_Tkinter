@@ -7,8 +7,9 @@ from datetime import datetime
 
 
 class AdminApp:
-    def __init__(self, login_root):
+    def __init__(self, login_root, current_user=None):
         self.login_root = login_root
+        self.current_user_username = current_user  
         self.page = 0
         self.items_per_page = 10
 
@@ -81,7 +82,22 @@ class AdminApp:
             fallback_label = tk.Label(sidebar_frame, text="IMAGE NOT FOUND", font=("Courier New", 12),
                                     fg="red", bg=self.bg_dark)
             fallback_label.pack(pady=(20, 10))
-
+        
+        admin_name = tk.Label(
+            sidebar_frame,
+            text=f"Hello, {self.current_user_username}",
+            font=("Courier New", 16, "bold"),
+            bg=self.bg_dark,
+            fg=self.accent_green,
+            anchor="w",  # Align text to the left inside the label
+            justify="left"
+        )
+        admin_name.pack(pady=10, padx=10, anchor="w", fill="x")
+        
+        # Add separator after admin name label
+        separator_after_label = tk.Frame(sidebar_frame, height=1, bg="white")
+        separator_after_label.pack(fill="x", pady=(10, 20), padx=10)
+        
         # Store buttons here for easy access    
         self.sidebar_buttons = {}
 
@@ -92,11 +108,24 @@ class AdminApp:
             ("Log Out", self.logout)
         ]
 
-        for text, command in sidebar_buttons_data:
+        for i, (text, command) in enumerate(sidebar_buttons_data):
+            # Add separator before logout button
+            if text == "Log Out":
+                separator = tk.Frame(sidebar_frame, height=1, bg="white")
+                separator.pack(fill="x", pady=(20, 10), padx=10)
+
             button = tk.Button(
-                sidebar_frame, text=text, font=("Courier New", 16), fg=self.accent_green, bg=self.bg_dark,
-                relief="flat", activebackground=self.accent_green, activeforeground=self.text_light,
-                command=lambda cmd=command, btn_text=text: self.switch_page(cmd, btn_text), cursor="hand2"
+                sidebar_frame, 
+                text=text, 
+                font=("Courier New", 16), 
+                fg="white",  # Changed from self.accent_green to white
+                bg=self.bg_dark,
+                relief="flat", 
+                activebackground=self.accent_green, 
+                activeforeground=self.text_light,
+                command=lambda cmd=command, btn_text=text: self.switch_page(cmd, btn_text), 
+                cursor="hand2",
+                anchor="w"  # Align button text to the left
             )
             button.pack(fill="x", pady=10, padx=10)
             self.sidebar_buttons[text] = button
@@ -136,7 +165,7 @@ class AdminApp:
         
         welcome_label = tk.Label(
             welcome_frame,
-            text="Welcome to DocuSort - Admin Dashboard",
+            text="DocuSort Admin Dashboard",
             font=("Courier New", 32, "bold"),
             bg=self.bg_dark,
             fg=self.text_light
@@ -196,7 +225,7 @@ class AdminApp:
             self.received_table_frame.pack(fill="both", expand=True)
             
             # Reload the received table data
-            self.clear_search("received")
+            self.clear_search("received ")
         
         # Pending Documents Card
         self.pending_card = tk.Frame(
@@ -981,195 +1010,269 @@ class AdminApp:
     # Step 1: Add these functions to your AdminApp class
 
     def show_document_details(self, table_type):
-        """Show detailed information for the selected document"""
+        """Show detailed information for the selected document with dark theme UI design"""
         if table_type == "pending":
             selected_item = self.pending_tree.selection()
             if not selected_item:
                 messagebox.showwarning("No Selection", "Please select a document to view details.", parent=self.root)
                 return
-            student_number = self.pending_tree.item(selected_item[0], 'values')[2]  # Index 2 contains student number
+            student_number = self.pending_tree.item(selected_item[0], 'values')[2]
             doc_type = "Pending"
         else:  # received
             selected_item = self.received_tree.selection()
             if not selected_item:
                 messagebox.showwarning("No Selection", "Please select a document to view details.", parent=self.root)
                 return
-            student_number = self.received_tree.item(selected_item[0], 'values')[2]  # Index 2 contains student number
+            student_number = self.received_tree.item(selected_item[0], 'values')[2]
             doc_type = "Received"
-        
+
         # Fetch detailed information from database
         try:
             conn = sqlite3.connect("docusortDB.db")
             cursor = conn.cursor()
-            
+
             cursor.execute("""
                 SELECT id, sender_fname, sender_surname, studnum, sender_section, sender_fac, 
-                    sender_course, sender_email, rcvr_fname, rcvr_surname, rcvr_fac, 
-                    datetime, doc_type
+                    sender_course, sender_email, rcvr_fac, rcvr_name, rcvr_email, 
+                    doc_description, datetime, doc_type
                 FROM documents
                 WHERE studnum = ? AND doc_type = ?
             """, (student_number, doc_type))
-            
+
             document = cursor.fetchone()
             conn.close()
-            
+
             if not document:
                 messagebox.showerror("Error", "Document not found in database.", parent=self.root)
                 return
-            
-            # Create popup window
+
+            # Dark theme color scheme (from second snippet)
+            colors = {
+                'bg_primary': '#131f24',
+                'bg_secondary': '#1a2a30',
+                'text_primary': 'white',
+                'text_secondary': 'white',
+                'accent_green': '#58cc02',
+                'button_bg': '#131f24',
+                'button_active': '#58cc02'
+            }
+
+            # Create popup window with dark theme
             detail_window = tk.Toplevel(self.root)
-            detail_window.title(f"Document Details - {doc_type}")
-            detail_window.configure(bg=self.bg_dark)
-            detail_window.geometry("775x650")
+            detail_window.title("Document Details")
+            detail_window.configure(bg=colors['bg_primary'])
+            detail_window.geometry("1100x700")
+            detail_window.resizable(True, True)
             
-            # Make it modal
+            # Center the window
             detail_window.transient(self.root)
             detail_window.wait_visibility()
             detail_window.grab_set()
-            
-            # Create scrollable frame for content
-            main_frame = tk.Frame(detail_window, bg=self.bg_dark)
-            main_frame.pack(fill="both", expand=True, padx=20, pady=20)
-            
-            # Add a canvas and scrollbar
-            canvas = tk.Canvas(main_frame, bg=self.bg_dark, highlightthickness=0)
-            scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=canvas.yview)
-            
-            # Configure scrollbar style
-            self.style.configure("Vertical.TScrollbar", 
-                                background=self.secondary_bg, 
-                                troughcolor=self.bg_dark, 
-                                bordercolor=self.secondary_bg,
-                                arrowcolor=self.text_light)
-            
-            # Configure the canvas
-            canvas.configure(yscrollcommand=scrollbar.set)
-            canvas.pack(side="left", fill="both", expand=True)
-            scrollbar.pack(side="right", fill="y")
-            
-            # Create a frame inside the canvas
-            content_frame = tk.Frame(canvas, bg=self.bg_dark)
-            canvas.create_window((0, 0), window=content_frame, anchor="nw")
-            
-            # Document ID and Status header
-            header_frame = tk.Frame(content_frame, bg=self.accent_green if doc_type == "Pending" else "#1976d2")
-            header_frame.pack(fill="x", pady=(0, 15))
-            
-            header_label = tk.Label(
+
+            # Main container with padding
+            main_container = tk.Frame(detail_window, bg=colors['bg_primary'])
+            main_container.pack(fill="both", expand=True, padx=24, pady=24)
+
+            # Header section with title and status
+            header_frame = tk.Frame(main_container, bg=colors['bg_primary'])
+            header_frame.pack(pady=(0, 24))
+
+            # Document title (centered like in second snippet)
+            title_label = tk.Label(
                 header_frame,
-                text=f"Document #{document[0]} - {doc_type}",
-                font=("Courier New", 16, "bold"),
-                bg=header_frame["bg"],
-                fg=self.text_dark,
-                padx=10,
-                pady=10
+                text=f"Document #{document[0]} - Information Details",
+                font=("Courier New", 24, "bold"),
+                bg=colors['bg_primary'],
+                fg=colors['accent_green']
             )
-            header_label.pack(fill="x")
+            title_label.pack()
+
+            # Scrollable content area
+            canvas = tk.Canvas(main_container, bg=colors['bg_primary'], highlightthickness=0)
+            scrollbar = ttk.Scrollbar(main_container, orient="vertical", command=canvas.yview)
+            canvas.configure(yscrollcommand=scrollbar.set)
             
-            # Document details sections
-            sections = [
-                ("Sender Information", [
-                    ("First Name", document[1]),
-                    ("Last Name", document[2]),
-                    ("Student Number", document[3]),
-                    ("Section", document[4]),
-                    ("Faculty", document[5]),
-                    ("Course", document[6]),
-                    ("Email", document[7])
-                ]),
-                ("Receiver Information", [
-                    ("First Name", document[8]),
-                    ("Last Name", document[9]),
-                    ("Faculty", document[10])
-                ]),
-                ("Document Information", [
-                    ("Date & Time", document[11]),
-                    ("Status", document[12])
-                ])
-            ]
-            
-            # Add each section
-            for section_title, fields in sections:
-                # Section frame
-                section_frame = tk.LabelFrame(
-                    content_frame,
-                    text=section_title,
-                    font=("Courier New", 14, "bold"),
-                    bg=self.bg_dark,
-                    fg=self.text_light,
-                    padx=15,
-                    pady=10
-                )
-                section_frame.pack(fill="x", pady=10)
-                
-                # Add each field
-                for label_text, value in fields:
-                    field_frame = tk.Frame(section_frame, bg=self.bg_dark)
-                    field_frame.pack(fill="x", pady=5)
-                    
-                    # Label
-                    tk.Label(
-                        field_frame,
-                        text=f"{label_text}:",
-                        font=("Courier New", 12),
-                        width=15,
-                        anchor="w",
-                        bg=self.bg_dark,
-                        fg=self.text_light
-                    ).pack(side="left")
-                    
-                    # Value
-                    tk.Label(
-                        field_frame,
-                        text=value,
-                        font=("Courier New", 12),
-                        anchor="w",
-                        bg=self.secondary_bg,
-                        fg=self.text_light,
-                        padx=10,
-                        pady=5,
-                        relief="flat",
-                        borderwidth=1
-                    ).pack(side="left", fill="x", expand=True)
-            
-            # Action buttons based on document type
-            button_frame = tk.Frame(content_frame, bg=self.bg_dark)
-            button_frame.pack(fill="x", pady=20)
-            
-            if doc_type == "Pending":
-                # Mark as received button
-                receive_btn = tk.Button(
-                    button_frame,
-                    text="Mark as Received",
-                    font=("Courier New", 12, "bold"),
-                    bg="#1976d2",  # Blue for receive
-                    fg=self.text_light,
-                    padx=15,
-                    pady=5,
-                    command=lambda: self.mark_as_received(document[0], detail_window)
-                )
-                receive_btn.pack(side="left", padx=10)
-            
+            canvas.pack(side="left", fill="both", expand=True)
+            scrollbar.pack(side="right", fill="y", padx=(8, 0))
+
+            # Content frame
+            content_frame = tk.Frame(canvas, bg=colors['bg_primary'])
+            canvas.create_window((0, 0), window=content_frame, anchor="nw")
+
+            # Info frame with dark background
+            info_frame = tk.Frame(content_frame, bg=colors['bg_secondary'], padx=20, pady=20)
+            info_frame.pack(fill="x", pady=(0, 16), padx=4)
+
+            # Status section
+            tk.Label(info_frame, text="DOCUMENT STATUS", font=("Courier New", 18, "bold"),
+                    fg=colors['accent_green'], bg=colors['bg_secondary']).grid(row=0, column=0, columnspan=4, sticky=tk.W, pady=(0, 10))
+
+            tk.Label(info_frame, text="Current Status:", font=("Courier New", 14), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=1, column=0, sticky=tk.W, pady=5)
+            tk.Label(info_frame, text=document[13], font=("Courier New", 14, "bold"), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=1, column=1, sticky=tk.W, pady=5)
+
+            tk.Label(info_frame, text="Document ID:", font=("Courier New", 14), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=1, column=3, sticky=tk.W, pady=5)
+            tk.Label(info_frame, text=str(document[0]), font=("Courier New", 14, "bold"), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=1, column=4, sticky=tk.W, pady=5)
+
+            # Separator
+            separator = tk.Frame(info_frame, height=2, bg=colors['accent_green'])
+            separator.grid(row=2, column=0, columnspan=5, sticky="ew", pady=15)
+
+            # Sender Information Section
+            tk.Label(info_frame, text="SENDER INFORMATION", font=("Courier New", 18, "bold"),
+                    fg=colors['accent_green'], bg=colors['bg_secondary']).grid(row=3, column=0, columnspan=4, sticky=tk.W, pady=(10, 10))
+
+            left_col = 0
+            spacer_col = 2
+            right_col = 3
+
+            # First Name / Last Name
+            tk.Label(info_frame, text="First Name:", font=("Courier New", 14), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=4, column=left_col, sticky=tk.W, pady=5)
+            tk.Label(info_frame, text=document[1], font=("Courier New", 14, "bold"), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=4, column=left_col+1, sticky=tk.W, pady=5)
+
+            tk.Label(info_frame, text="    ", font=("Courier New", 14), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=4, column=spacer_col, sticky=tk.W, pady=5)
+
+            tk.Label(info_frame, text="Last Name:", font=("Courier New", 14), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=4, column=right_col, sticky=tk.W, pady=5)
+            tk.Label(info_frame, text=document[2], font=("Courier New", 14, "bold"), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=4, column=right_col+1, sticky=tk.W, pady=5)
+
+            # Student ID / Section
+            tk.Label(info_frame, text="Student ID:", font=("Courier New", 14), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=5, column=left_col, sticky=tk.W, pady=5)
+            tk.Label(info_frame, text=document[3], font=("Courier New", 14, "bold"), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=5, column=left_col+1, sticky=tk.W, pady=5)
+
+            tk.Label(info_frame, text="Section:", font=("Courier New", 14), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=5, column=right_col, sticky=tk.W, pady=5)
+            tk.Label(info_frame, text=document[4], font=("Courier New", 14, "bold"), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=5, column=right_col+1, sticky=tk.W, pady=5)
+
+            # Faculty / Course
+            tk.Label(info_frame, text="Faculty:", font=("Courier New", 14), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=6, column=left_col, sticky=tk.W, pady=5)
+            tk.Label(info_frame, text=document[5], font=("Courier New", 14, "bold"), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary'], justify="left", wraplength=400).grid(row=6, column=left_col+1, sticky=tk.W, pady=5)
+
+            tk.Label(info_frame, text="Course:", font=("Courier New", 14), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=6, column=right_col, sticky=tk.W, pady=5)
+            tk.Label(info_frame, text=document[6], font=("Courier New", 14, "bold"), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary'], justify="left", wraplength=400).grid(row=6, column=right_col+1, sticky=tk.W, pady=5)
+
+            # Sender Email
+            tk.Label(info_frame, text="Email:", font=("Courier New", 14), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=7, column=left_col, sticky=tk.W, pady=5)
+            tk.Label(info_frame, text=document[7], font=("Courier New", 14, "bold"), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=7, column=left_col+1, columnspan=3, sticky=tk.W, pady=5)
+
+            # Separator
+            separator2 = tk.Frame(info_frame, height=2, bg=colors['accent_green'])
+            separator2.grid(row=8, column=0, columnspan=5, sticky="ew", pady=15)
+
+            # Receiver Information Section
+            tk.Label(info_frame, text="RECEIVER INFORMATION", font=("Courier New", 18, "bold"),
+                    fg=colors['accent_green'], bg=colors['bg_secondary']).grid(row=9, column=0, columnspan=4, sticky=tk.W, pady=(10, 10))
+
+            # Receiver Name / Faculty
+            tk.Label(info_frame, text="Receiver Name:", font=("Courier New", 14), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=10, column=left_col, sticky=tk.W, pady=5)
+            tk.Label(info_frame, text=document[9], font=("Courier New", 14, "bold"), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=10, column=left_col+1, sticky=tk.W, pady=5)
+
+            tk.Label(info_frame, text="Faculty:", font=("Courier New", 14), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=10, column=right_col, sticky=tk.W, pady=5)
+            tk.Label(info_frame, text=document[8], font=("Courier New", 14, "bold"), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary'], justify="left", wraplength=400).grid(row=10, column=right_col+1, sticky=tk.W, pady=5)
+
+            # Receiver Email
+            tk.Label(info_frame, text="Email:", font=("Courier New", 14), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=11, column=left_col, sticky=tk.W, pady=5)
+            tk.Label(info_frame, text=document[10], font=("Courier New", 14, "bold"), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=11, column=left_col+1, columnspan=3, sticky=tk.W, pady=5)
+
+            # Document Description
+            if document[11]:
+                tk.Label(info_frame, text="Description:", font=("Courier New", 14), 
+                        fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=12, column=left_col, sticky=tk.NW, pady=5)
+
+                desc_text = tk.Text(info_frame, font=("Courier New", 12), fg=colors['text_primary'], bg=colors['bg_secondary'],
+                                    height=3, width=50, wrap="word", relief="flat", bd=0)
+                desc_text.grid(row=12, column=left_col+1, columnspan=4, sticky=tk.W, pady=5)
+                desc_text.insert("1.0", document[11])
+                desc_text.config(state="disabled")
+
+            # Separator
+            separator3 = tk.Frame(info_frame, height=2, bg=colors['accent_green'])
+            separator3.grid(row=13, column=0, columnspan=5, sticky="ew", pady=15)
+
+            # Timestamp section
+            tk.Label(info_frame, text="TIMESTAMP", font=("Courier New", 18, "bold"),
+                    fg=colors['accent_green'], bg=colors['bg_secondary']).grid(row=14, column=0, columnspan=4, sticky=tk.W, pady=(10, 10))
+
+            tk.Label(info_frame, text="Date and Time:", font=("Courier New", 14),
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=15, column=left_col, sticky=tk.W, pady=5)
+            tk.Label(info_frame, text=document[12], font=("Courier New", 14, "bold"),
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=15, column=left_col+1, columnspan=3, sticky=tk.W, pady=5)
+
+            # Button frame
+            button_frame = tk.Frame(content_frame, bg=colors['bg_primary'])
+            button_frame.pack(pady=30)
+
             # Close button
             close_btn = tk.Button(
                 button_frame,
                 text="Close",
-                font=("Courier New", 12),
-                bg=self.secondary_bg,
-                fg=self.text_light,
-                padx=15,
-                pady=5,
+                font=("Courier New", 18),
+                fg=colors['text_primary'],
+                bg=colors['button_bg'],
+                relief="flat",
+                activebackground=colors['button_bg'],
+                activeforeground=colors['text_primary'],
+                cursor="hand2",
                 command=detail_window.destroy
             )
-            close_btn.pack(side="left", padx=10)
+            close_btn.pack(side=tk.LEFT, padx=30)
+
+            # Mark as Received button (only for pending documents)
+            if doc_type == "Pending":
+                receive_btn = tk.Button(
+                    button_frame,
+                    text="✓ Mark as Received",
+                    font=("Courier New", 18),
+                    fg=colors['bg_primary'],
+                    bg=colors['accent_green'],
+                    relief="flat",
+                    activebackground=colors['accent_green'],
+                    activeforeground=colors['bg_primary'],
+                    cursor="hand2",
+                    command=lambda: self.mark_as_received(document[0], detail_window)
+                )
+                receive_btn.pack(side=tk.LEFT, padx=30)
+
+            # Configure scrolling
+            def configure_scroll_region(event=None):
+                canvas.configure(scrollregion=canvas.bbox("all"))
+                
+            content_frame.bind('<Configure>', configure_scroll_region)
             
-            # Configure the scrollregion
-            content_frame.update_idletasks()
-            canvas.configure(scrollregion=canvas.bbox("all"))
+            # Mouse wheel scrolling
+            def on_mousewheel(event):
+                canvas.yview_scroll(int(-1*(event.delta/120)), "units")
             
+            canvas.bind("<MouseWheel>", on_mousewheel)
+            detail_window.bind("<MouseWheel>", on_mousewheel)
+
+            # Initial scroll region configuration
+            detail_window.after(100, configure_scroll_region)
+
         except sqlite3.Error as e:
-            messagebox.showerror("Database Error", f"Failed to load document details: {e}", parent=self.root)
+            messagebox.showerror("Database Error", f"Failed to load document details:\n{str(e)}", parent=self.root)
 
     def mark_as_received(self, doc_id, window):
         """Mark a pending document as received"""
@@ -1301,8 +1404,8 @@ class AdminApp:
         users_frame = tk.Frame(self.content_frame, bg=self.bg_dark)
         users_frame.pack(padx=10, pady=10, fill="none", expand=False)
 
-        # Create admin users table
-        columns = ("id", "username", "role", "date_created", "last_login")
+        # Create admin users table with additional columns for Full Name and Email
+        columns = ("id", "fullname", "admin_email", "username", "role", "date_created", "last_login")
         self.admin_tree = ttk.Treeview(users_frame, columns=columns, show="headings", height=8)
 
         for col in columns:
@@ -1310,6 +1413,7 @@ class AdminApp:
             self.admin_tree.column(col, anchor="center", width=140)
 
         self.admin_tree.pack(pady=10)
+
 
         # Load sample or actual admin users
         self.load_admin_users()
@@ -1349,18 +1453,20 @@ class AdminApp:
             # Connect to the database
             conn = sqlite3.connect("docusortDB.db")
             cursor = conn.cursor()
-            
+
             # Check if admin_users table exists
             cursor.execute("""
                 SELECT name FROM sqlite_master 
                 WHERE type='table' AND name='admin_users'
             """)
-            
+
             if not cursor.fetchone():
                 # Create table if it doesn't exist
                 cursor.execute("""
                     CREATE TABLE admin_users (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        fullname TEXT UNIQUE NOT NULL,
+                        admin_email TEXT UNIQUE NOT NULL,
                         username TEXT UNIQUE NOT NULL,
                         password TEXT NOT NULL,
                         role TEXT NOT NULL,
@@ -1369,60 +1475,86 @@ class AdminApp:
                     )
                 """)
                 conn.commit()
-                
+
                 # Insert default admin if table was just created
                 cursor.execute("""
-                    INSERT INTO admin_users (username, password, role, date_created)
-                    VALUES (?, ?, ?, datetime('now'))
-                """, ("admin", "admin123", "Super Admin"))
+                    INSERT INTO admin_users (fullname, admin_email, username, password, role, date_created)
+                    VALUES (?, ?, ?, ?, ?, datetime('now'))
+                """, ("Administrator", "admin@example.com", "admin", "admin123", "Super Admin"))
                 conn.commit()
-            
-            # Get admin users
+
+            # Get admin users (include fullname and admin_email)
             cursor.execute("""
-                SELECT id, username, role, date_created, last_login
+                SELECT id, fullname, admin_email, username, role, date_created, last_login
                 FROM admin_users
                 ORDER BY id
             """)
-            
+
             admin_users = cursor.fetchall()
             conn.close()
-            
-            # Insert into treeview
+
+            # Insert into Treeview
             for user in admin_users:
                 self.admin_tree.insert("", "end", values=user)
-                
+
         except sqlite3.Error as e:
             messagebox.showerror("Database Error", f"Failed to load admin users: {e}")
+
             
+
     def delete_admin_user(self):
+        from tkinter.simpledialog import askstring
         selected_item = self.admin_tree.selection()
         if not selected_item:
             messagebox.showwarning("No Selection", "Please select an admin user to delete.", parent=self.root)
             return
-            
+
         user_id = self.admin_tree.item(selected_item[0], 'values')[0]
         username = self.admin_tree.item(selected_item[0], 'values')[1]
-        
-        # Confirm deletion
-        confirm = messagebox.askyesno("Confirm Delete", 
-                                      f"Are you sure you want to delete admin user '{username}'?", 
-                                      parent=self.root)
-        if not confirm:
+    
+
+        # Prompt for password
+        password_input = askstring("Password Required", "Enter your password to confirm deletion:", show="*", parent=self.root)
+        if not password_input:
+            messagebox.showwarning("Cancelled", "Deletion cancelled.", parent=self.root)
             return
-            
+
         try:
+            # Check password of the currently logged-in user
             conn = sqlite3.connect("docusortDB.db")
             cursor = conn.cursor()
-            
+
+            cursor.execute("SELECT password FROM admin_users WHERE username = ?", (self.current_user_username,))
+            result = cursor.fetchone()
+
+            if result is None:
+                messagebox.showerror("Error", "Your account was not found.", parent=self.root)
+                conn.close()
+                return
+
+            correct_password = result[0]
+            if password_input != correct_password:
+                messagebox.showerror("Authentication Failed", "Incorrect password. Deletion cancelled.", parent=self.root)
+                conn.close()
+                return
+
+            # Confirm deletion
+            confirm = messagebox.askyesno("Confirm Delete", 
+                                        f"Are you sure you want to delete admin user '{username}'?", 
+                                        parent=self.root)
+            if not confirm:
+                conn.close()
+                return
+
             # Delete user
             cursor.execute("DELETE FROM admin_users WHERE id = ?", (user_id,))
             conn.commit()
             conn.close()
-            
-            # Refresh the list
+
+            # Refresh list
             self.load_admin_users()
             messagebox.showinfo("Success", f"Admin user '{username}' has been deleted.", parent=self.root)
-            
+
         except sqlite3.Error as e:
             messagebox.showerror("Database Error", f"Failed to delete admin user: {e}", parent=self.root)
             
@@ -1431,7 +1563,7 @@ class AdminApp:
         add_window = tk.Toplevel(self.root)
         add_window.title("Add New Admin User")
         add_window.configure(bg=self.bg_dark)
-        add_window.geometry("400x450")
+        add_window.geometry("400x575")
         add_window.resizable(False, False)
         
         # Make it modal
@@ -1450,6 +1582,50 @@ class AdminApp:
         # Form container
         form_frame = tk.Frame(add_window, bg=self.bg_dark, padx=30, pady=10)
         form_frame.pack(fill="both")
+
+        # First and Last Name
+        tk.Label(
+            form_frame,
+            text="Full Name:",
+            font=("Courier New", 12),
+            bg=self.bg_dark,
+            fg=self.text_light,
+            anchor="w"
+        ).pack(fill="x", pady=(10, 0))
+        
+        fullname_var = tk.StringVar()
+        fullname_entry = tk.Entry(
+            form_frame,
+            font=("Courier New", 12),
+            bg=self.secondary_bg,
+            fg=self.text_light,
+            insertbackground=self.text_light,
+            textvariable=fullname_var
+        )
+        fullname_entry.pack(fill="x", pady=(0, 10))
+        fullname_entry.focus_set()
+        
+        # Email
+        tk.Label(
+            form_frame,
+            text="Email:",
+            font=("Courier New", 12),
+            bg=self.bg_dark,
+            fg=self.text_light,
+            anchor="w"
+        ).pack(fill="x", pady=(10, 0))
+                
+        
+        admin_email_var = tk.StringVar()
+        admin_email_entry = tk.Entry(
+            form_frame,
+            font=("Courier New", 12),
+            bg=self.secondary_bg,
+            fg=self.text_light,
+            insertbackground=self.text_light,
+            textvariable=admin_email_var
+        )
+        admin_email_entry.pack(fill="x", pady=(0, 10))
         
         # Username
         tk.Label(
@@ -1540,26 +1716,7 @@ class AdminApp:
         # Button frame
         button_frame = tk.Frame(add_window, bg=self.bg_dark, pady=10)
         button_frame.pack()
-        
-        # Register button
-        register_btn = tk.Button(
-            button_frame,
-            text="Register Admin",
-            font=("Courier New", 12, "bold"),
-            bg=self.accent_green,
-            fg=self.text_light,
-            padx=15,
-            pady=5,
-            command=lambda: self.register_admin(
-                username_var.get(),
-                password_var.get(),
-                confirm_var.get(),
-                role_var.get(),
-                add_window
-            )
-        )
-        register_btn.pack(side="left", padx=10)
-        
+
         # Cancel button
         cancel_btn = tk.Button(
             button_frame,
@@ -1571,53 +1728,82 @@ class AdminApp:
             pady=5,
             command=add_window.destroy
         )
-        cancel_btn.pack(side="left", padx=10)
+        cancel_btn.pack(side="left", padx=10)        
+        # Register button
+        register_btn = tk.Button(
+            button_frame,
+            text="Register Admin",
+            font=("Courier New", 12, "bold"),
+            bg=self.accent_green,
+            fg=self.text_light,
+            padx=15,
+            pady=5,
+            command=lambda: self.register_admin(
+                fullname_var.get(),
+                admin_email_var.get(),
+                username_var.get(),
+                password_var.get(),
+                confirm_var.get(),
+                role_var.get(),
+                add_window
+            )
+        )
+        register_btn.pack(side="left", padx=10)
         
-        # Focus on the first field
-        username_entry.focus_set()
+
         
-    def register_admin(self, username, password, confirm, role, window):
+
+        
+    def register_admin(self, fullname, admin_email, username, password, confirm, role, window):
         # Validate inputs
-        if not username or not password or not confirm:
+        if not fullname or not admin_email or not username or not password or not confirm:
             messagebox.showerror("Error", "All fields must be filled", parent=window)
             return
-            
+
         if password != confirm:
             messagebox.showerror("Error", "Passwords do not match", parent=window)
             return
-            
-        if len(password) < 6:
-            messagebox.showerror("Error", "Password must be at least 6 characters", parent=window)
+
+        if len(password) < 8:
+            messagebox.showerror("Error", "Password must be at least 8 characters", parent=window)
             return
-            
+
         try:
             conn = sqlite3.connect("docusortDB.db")
             cursor = conn.cursor()
-            
-            # Check if username already exists
+
+            # Check if FULL NAME already exists
+            cursor.execute("SELECT id FROM admin_users WHERE fullname = ?", (fullname,))
+            if cursor.fetchone():
+                messagebox.showerror("Error", "Full Name already exists", parent=window)
+                conn.close()
+                return
+
+            # Check if USERNAME already exists
             cursor.execute("SELECT id FROM admin_users WHERE username = ?", (username,))
             if cursor.fetchone():
                 messagebox.showerror("Error", "Username already exists", parent=window)
                 conn.close()
                 return
-                
+
             # Insert new admin user
             cursor.execute("""
-                INSERT INTO admin_users (username, password, role, date_created)
-                VALUES (?, ?, ?, datetime('now'))
-            """, (username, password, role))
-            
+                INSERT INTO admin_users (fullname, admin_email, username, password, role, date_created)
+                VALUES (?, ?, ?, ?, ?, datetime('now'))
+            """, (fullname, admin_email, username, password, role))
+
             conn.commit()
             conn.close()
-            
+
             messagebox.showinfo("Success", "New admin user registered successfully", parent=window)
             window.destroy()
-            
+
             # Refresh the admin users list
             self.load_admin_users()
-            
+
         except sqlite3.Error as e:
             messagebox.showerror("Database Error", f"Failed to register admin: {e}", parent=window)
+
 
 
     def update_content(self, title, message):

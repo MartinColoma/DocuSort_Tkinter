@@ -82,7 +82,22 @@ class AdminApp:
             fallback_label = tk.Label(sidebar_frame, text="IMAGE NOT FOUND", font=("Courier New", 12),
                                     fg="red", bg=self.bg_dark)
             fallback_label.pack(pady=(20, 10))
-
+        
+        admin_name = tk.Label(
+            sidebar_frame,
+            text=f"Hello, {self.current_user_username}",
+            font=("Courier New", 16, "bold"),
+            bg=self.bg_dark,
+            fg=self.accent_green,
+            anchor="w",  # Align text to the left inside the label
+            justify="left"
+        )
+        admin_name.pack(pady=10, padx=10, anchor="w", fill="x")
+        
+        # Add separator after admin name label
+        separator_after_label = tk.Frame(sidebar_frame, height=1, bg="white")
+        separator_after_label.pack(fill="x", pady=(10, 20), padx=10)
+        
         # Store buttons here for easy access    
         self.sidebar_buttons = {}
 
@@ -93,11 +108,24 @@ class AdminApp:
             ("Log Out", self.logout)
         ]
 
-        for text, command in sidebar_buttons_data:
+        for i, (text, command) in enumerate(sidebar_buttons_data):
+            # Add separator before logout button
+            if text == "Log Out":
+                separator = tk.Frame(sidebar_frame, height=1, bg="white")
+                separator.pack(fill="x", pady=(20, 10), padx=10)
+
             button = tk.Button(
-                sidebar_frame, text=text, font=("Courier New", 16), fg=self.accent_green, bg=self.bg_dark,
-                relief="flat", activebackground=self.accent_green, activeforeground=self.text_light,
-                command=lambda cmd=command, btn_text=text: self.switch_page(cmd, btn_text), cursor="hand2"
+                sidebar_frame, 
+                text=text, 
+                font=("Courier New", 16), 
+                fg="white",  # Changed from self.accent_green to white
+                bg=self.bg_dark,
+                relief="flat", 
+                activebackground=self.accent_green, 
+                activeforeground=self.text_light,
+                command=lambda cmd=command, btn_text=text: self.switch_page(cmd, btn_text), 
+                cursor="hand2",
+                anchor="w"  # Align button text to the left
             )
             button.pack(fill="x", pady=10, padx=10)
             self.sidebar_buttons[text] = button
@@ -137,7 +165,7 @@ class AdminApp:
         
         welcome_label = tk.Label(
             welcome_frame,
-            text="Welcome to DocuSort - Admin Dashboard",
+            text="DocuSort Admin Dashboard",
             font=("Courier New", 32, "bold"),
             bg=self.bg_dark,
             fg=self.text_light
@@ -982,195 +1010,269 @@ class AdminApp:
     # Step 1: Add these functions to your AdminApp class
 
     def show_document_details(self, table_type):
-        """Show detailed information for the selected document"""
+        """Show detailed information for the selected document with dark theme UI design"""
         if table_type == "pending":
             selected_item = self.pending_tree.selection()
             if not selected_item:
                 messagebox.showwarning("No Selection", "Please select a document to view details.", parent=self.root)
                 return
-            student_number = self.pending_tree.item(selected_item[0], 'values')[2]  # Index 2 contains student number
+            student_number = self.pending_tree.item(selected_item[0], 'values')[2]
             doc_type = "Pending"
         else:  # received
             selected_item = self.received_tree.selection()
             if not selected_item:
                 messagebox.showwarning("No Selection", "Please select a document to view details.", parent=self.root)
                 return
-            student_number = self.received_tree.item(selected_item[0], 'values')[2]  # Index 2 contains student number
+            student_number = self.received_tree.item(selected_item[0], 'values')[2]
             doc_type = "Received"
-        
+
         # Fetch detailed information from database
         try:
             conn = sqlite3.connect("docusortDB.db")
             cursor = conn.cursor()
-            
+
             cursor.execute("""
                 SELECT id, sender_fname, sender_surname, studnum, sender_section, sender_fac, 
-                    sender_course, sender_email, rcvr_fname, rcvr_surname, rcvr_fac, 
-                    datetime, doc_type
+                    sender_course, sender_email, rcvr_fac, rcvr_name, rcvr_email, 
+                    doc_description, datetime, doc_type
                 FROM documents
                 WHERE studnum = ? AND doc_type = ?
             """, (student_number, doc_type))
-            
+
             document = cursor.fetchone()
             conn.close()
-            
+
             if not document:
                 messagebox.showerror("Error", "Document not found in database.", parent=self.root)
                 return
-            
-            # Create popup window
+
+            # Dark theme color scheme (from second snippet)
+            colors = {
+                'bg_primary': '#131f24',
+                'bg_secondary': '#1a2a30',
+                'text_primary': 'white',
+                'text_secondary': 'white',
+                'accent_green': '#58cc02',
+                'button_bg': '#131f24',
+                'button_active': '#58cc02'
+            }
+
+            # Create popup window with dark theme
             detail_window = tk.Toplevel(self.root)
-            detail_window.title(f"Document Details - {doc_type}")
-            detail_window.configure(bg=self.bg_dark)
-            detail_window.geometry("775x650")
+            detail_window.title("Document Details")
+            detail_window.configure(bg=colors['bg_primary'])
+            detail_window.geometry("1100x700")
+            detail_window.resizable(True, True)
             
-            # Make it modal
+            # Center the window
             detail_window.transient(self.root)
             detail_window.wait_visibility()
             detail_window.grab_set()
-            
-            # Create scrollable frame for content
-            main_frame = tk.Frame(detail_window, bg=self.bg_dark)
-            main_frame.pack(fill="both", expand=True, padx=20, pady=20)
-            
-            # Add a canvas and scrollbar
-            canvas = tk.Canvas(main_frame, bg=self.bg_dark, highlightthickness=0)
-            scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=canvas.yview)
-            
-            # Configure scrollbar style
-            self.style.configure("Vertical.TScrollbar", 
-                                background=self.secondary_bg, 
-                                troughcolor=self.bg_dark, 
-                                bordercolor=self.secondary_bg,
-                                arrowcolor=self.text_light)
-            
-            # Configure the canvas
-            canvas.configure(yscrollcommand=scrollbar.set)
-            canvas.pack(side="left", fill="both", expand=True)
-            scrollbar.pack(side="right", fill="y")
-            
-            # Create a frame inside the canvas
-            content_frame = tk.Frame(canvas, bg=self.bg_dark)
-            canvas.create_window((0, 0), window=content_frame, anchor="nw")
-            
-            # Document ID and Status header
-            header_frame = tk.Frame(content_frame, bg=self.accent_green if doc_type == "Pending" else "#1976d2")
-            header_frame.pack(fill="x", pady=(0, 15))
-            
-            header_label = tk.Label(
+
+            # Main container with padding
+            main_container = tk.Frame(detail_window, bg=colors['bg_primary'])
+            main_container.pack(fill="both", expand=True, padx=24, pady=24)
+
+            # Header section with title and status
+            header_frame = tk.Frame(main_container, bg=colors['bg_primary'])
+            header_frame.pack(pady=(0, 24))
+
+            # Document title (centered like in second snippet)
+            title_label = tk.Label(
                 header_frame,
-                text=f"Document #{document[0]} - {doc_type}",
-                font=("Courier New", 16, "bold"),
-                bg=header_frame["bg"],
-                fg=self.text_dark,
-                padx=10,
-                pady=10
+                text=f"Document #{document[0]} - Information Details",
+                font=("Courier New", 24, "bold"),
+                bg=colors['bg_primary'],
+                fg=colors['accent_green']
             )
-            header_label.pack(fill="x")
+            title_label.pack()
+
+            # Scrollable content area
+            canvas = tk.Canvas(main_container, bg=colors['bg_primary'], highlightthickness=0)
+            scrollbar = ttk.Scrollbar(main_container, orient="vertical", command=canvas.yview)
+            canvas.configure(yscrollcommand=scrollbar.set)
             
-            # Document details sections
-            sections = [
-                ("Sender Information", [
-                    ("First Name", document[1]),
-                    ("Last Name", document[2]),
-                    ("Student Number", document[3]),
-                    ("Section", document[4]),
-                    ("Faculty", document[5]),
-                    ("Course", document[6]),
-                    ("Email", document[7])
-                ]),
-                ("Receiver Information", [
-                    ("First Name", document[8]),
-                    ("Last Name", document[9]),
-                    ("Faculty", document[10])
-                ]),
-                ("Document Information", [
-                    ("Date & Time", document[11]),
-                    ("Status", document[12])
-                ])
-            ]
-            
-            # Add each section
-            for section_title, fields in sections:
-                # Section frame
-                section_frame = tk.LabelFrame(
-                    content_frame,
-                    text=section_title,
-                    font=("Courier New", 14, "bold"),
-                    bg=self.bg_dark,
-                    fg=self.text_light,
-                    padx=15,
-                    pady=10
-                )
-                section_frame.pack(fill="x", pady=10)
-                
-                # Add each field
-                for label_text, value in fields:
-                    field_frame = tk.Frame(section_frame, bg=self.bg_dark)
-                    field_frame.pack(fill="x", pady=5)
-                    
-                    # Label
-                    tk.Label(
-                        field_frame,
-                        text=f"{label_text}:",
-                        font=("Courier New", 12),
-                        width=15,
-                        anchor="w",
-                        bg=self.bg_dark,
-                        fg=self.text_light
-                    ).pack(side="left")
-                    
-                    # Value
-                    tk.Label(
-                        field_frame,
-                        text=value,
-                        font=("Courier New", 12),
-                        anchor="w",
-                        bg=self.secondary_bg,
-                        fg=self.text_light,
-                        padx=10,
-                        pady=5,
-                        relief="flat",
-                        borderwidth=1
-                    ).pack(side="left", fill="x", expand=True)
-            
-            # Action buttons based on document type
-            button_frame = tk.Frame(content_frame, bg=self.bg_dark)
-            button_frame.pack(fill="x", pady=20)
-            
-            if doc_type == "Pending":
-                # Mark as received button
-                receive_btn = tk.Button(
-                    button_frame,
-                    text="Mark as Received",
-                    font=("Courier New", 12, "bold"),
-                    bg="#1976d2",  # Blue for receive
-                    fg=self.text_light,
-                    padx=15,
-                    pady=5,
-                    command=lambda: self.mark_as_received(document[0], detail_window)
-                )
-                receive_btn.pack(side="left", padx=10)
-            
+            canvas.pack(side="left", fill="both", expand=True)
+            scrollbar.pack(side="right", fill="y", padx=(8, 0))
+
+            # Content frame
+            content_frame = tk.Frame(canvas, bg=colors['bg_primary'])
+            canvas.create_window((0, 0), window=content_frame, anchor="nw")
+
+            # Info frame with dark background
+            info_frame = tk.Frame(content_frame, bg=colors['bg_secondary'], padx=20, pady=20)
+            info_frame.pack(fill="x", pady=(0, 16), padx=4)
+
+            # Status section
+            tk.Label(info_frame, text="DOCUMENT STATUS", font=("Courier New", 18, "bold"),
+                    fg=colors['accent_green'], bg=colors['bg_secondary']).grid(row=0, column=0, columnspan=4, sticky=tk.W, pady=(0, 10))
+
+            tk.Label(info_frame, text="Current Status:", font=("Courier New", 14), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=1, column=0, sticky=tk.W, pady=5)
+            tk.Label(info_frame, text=document[13], font=("Courier New", 14, "bold"), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=1, column=1, sticky=tk.W, pady=5)
+
+            tk.Label(info_frame, text="Document ID:", font=("Courier New", 14), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=1, column=3, sticky=tk.W, pady=5)
+            tk.Label(info_frame, text=str(document[0]), font=("Courier New", 14, "bold"), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=1, column=4, sticky=tk.W, pady=5)
+
+            # Separator
+            separator = tk.Frame(info_frame, height=2, bg=colors['accent_green'])
+            separator.grid(row=2, column=0, columnspan=5, sticky="ew", pady=15)
+
+            # Sender Information Section
+            tk.Label(info_frame, text="SENDER INFORMATION", font=("Courier New", 18, "bold"),
+                    fg=colors['accent_green'], bg=colors['bg_secondary']).grid(row=3, column=0, columnspan=4, sticky=tk.W, pady=(10, 10))
+
+            left_col = 0
+            spacer_col = 2
+            right_col = 3
+
+            # First Name / Last Name
+            tk.Label(info_frame, text="First Name:", font=("Courier New", 14), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=4, column=left_col, sticky=tk.W, pady=5)
+            tk.Label(info_frame, text=document[1], font=("Courier New", 14, "bold"), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=4, column=left_col+1, sticky=tk.W, pady=5)
+
+            tk.Label(info_frame, text="    ", font=("Courier New", 14), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=4, column=spacer_col, sticky=tk.W, pady=5)
+
+            tk.Label(info_frame, text="Last Name:", font=("Courier New", 14), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=4, column=right_col, sticky=tk.W, pady=5)
+            tk.Label(info_frame, text=document[2], font=("Courier New", 14, "bold"), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=4, column=right_col+1, sticky=tk.W, pady=5)
+
+            # Student ID / Section
+            tk.Label(info_frame, text="Student ID:", font=("Courier New", 14), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=5, column=left_col, sticky=tk.W, pady=5)
+            tk.Label(info_frame, text=document[3], font=("Courier New", 14, "bold"), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=5, column=left_col+1, sticky=tk.W, pady=5)
+
+            tk.Label(info_frame, text="Section:", font=("Courier New", 14), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=5, column=right_col, sticky=tk.W, pady=5)
+            tk.Label(info_frame, text=document[4], font=("Courier New", 14, "bold"), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=5, column=right_col+1, sticky=tk.W, pady=5)
+
+            # Faculty / Course
+            tk.Label(info_frame, text="Faculty:", font=("Courier New", 14), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=6, column=left_col, sticky=tk.W, pady=5)
+            tk.Label(info_frame, text=document[5], font=("Courier New", 14, "bold"), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary'], justify="left", wraplength=400).grid(row=6, column=left_col+1, sticky=tk.W, pady=5)
+
+            tk.Label(info_frame, text="Course:", font=("Courier New", 14), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=6, column=right_col, sticky=tk.W, pady=5)
+            tk.Label(info_frame, text=document[6], font=("Courier New", 14, "bold"), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary'], justify="left", wraplength=400).grid(row=6, column=right_col+1, sticky=tk.W, pady=5)
+
+            # Sender Email
+            tk.Label(info_frame, text="Email:", font=("Courier New", 14), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=7, column=left_col, sticky=tk.W, pady=5)
+            tk.Label(info_frame, text=document[7], font=("Courier New", 14, "bold"), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=7, column=left_col+1, columnspan=3, sticky=tk.W, pady=5)
+
+            # Separator
+            separator2 = tk.Frame(info_frame, height=2, bg=colors['accent_green'])
+            separator2.grid(row=8, column=0, columnspan=5, sticky="ew", pady=15)
+
+            # Receiver Information Section
+            tk.Label(info_frame, text="RECEIVER INFORMATION", font=("Courier New", 18, "bold"),
+                    fg=colors['accent_green'], bg=colors['bg_secondary']).grid(row=9, column=0, columnspan=4, sticky=tk.W, pady=(10, 10))
+
+            # Receiver Name / Faculty
+            tk.Label(info_frame, text="Receiver Name:", font=("Courier New", 14), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=10, column=left_col, sticky=tk.W, pady=5)
+            tk.Label(info_frame, text=document[9], font=("Courier New", 14, "bold"), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=10, column=left_col+1, sticky=tk.W, pady=5)
+
+            tk.Label(info_frame, text="Faculty:", font=("Courier New", 14), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=10, column=right_col, sticky=tk.W, pady=5)
+            tk.Label(info_frame, text=document[8], font=("Courier New", 14, "bold"), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary'], justify="left", wraplength=400).grid(row=10, column=right_col+1, sticky=tk.W, pady=5)
+
+            # Receiver Email
+            tk.Label(info_frame, text="Email:", font=("Courier New", 14), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=11, column=left_col, sticky=tk.W, pady=5)
+            tk.Label(info_frame, text=document[10], font=("Courier New", 14, "bold"), 
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=11, column=left_col+1, columnspan=3, sticky=tk.W, pady=5)
+
+            # Document Description
+            if document[11]:
+                tk.Label(info_frame, text="Description:", font=("Courier New", 14), 
+                        fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=12, column=left_col, sticky=tk.NW, pady=5)
+
+                desc_text = tk.Text(info_frame, font=("Courier New", 12), fg=colors['text_primary'], bg=colors['bg_secondary'],
+                                    height=3, width=50, wrap="word", relief="flat", bd=0)
+                desc_text.grid(row=12, column=left_col+1, columnspan=4, sticky=tk.W, pady=5)
+                desc_text.insert("1.0", document[11])
+                desc_text.config(state="disabled")
+
+            # Separator
+            separator3 = tk.Frame(info_frame, height=2, bg=colors['accent_green'])
+            separator3.grid(row=13, column=0, columnspan=5, sticky="ew", pady=15)
+
+            # Timestamp section
+            tk.Label(info_frame, text="TIMESTAMP", font=("Courier New", 18, "bold"),
+                    fg=colors['accent_green'], bg=colors['bg_secondary']).grid(row=14, column=0, columnspan=4, sticky=tk.W, pady=(10, 10))
+
+            tk.Label(info_frame, text="Date and Time:", font=("Courier New", 14),
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=15, column=left_col, sticky=tk.W, pady=5)
+            tk.Label(info_frame, text=document[12], font=("Courier New", 14, "bold"),
+                    fg=colors['text_primary'], bg=colors['bg_secondary']).grid(row=15, column=left_col+1, columnspan=3, sticky=tk.W, pady=5)
+
+            # Button frame
+            button_frame = tk.Frame(content_frame, bg=colors['bg_primary'])
+            button_frame.pack(pady=30)
+
             # Close button
             close_btn = tk.Button(
                 button_frame,
                 text="Close",
-                font=("Courier New", 12),
-                bg=self.secondary_bg,
-                fg=self.text_light,
-                padx=15,
-                pady=5,
+                font=("Courier New", 18),
+                fg=colors['text_primary'],
+                bg=colors['button_bg'],
+                relief="flat",
+                activebackground=colors['button_bg'],
+                activeforeground=colors['text_primary'],
+                cursor="hand2",
                 command=detail_window.destroy
             )
-            close_btn.pack(side="left", padx=10)
+            close_btn.pack(side=tk.LEFT, padx=30)
+
+            # Mark as Received button (only for pending documents)
+            if doc_type == "Pending":
+                receive_btn = tk.Button(
+                    button_frame,
+                    text="✓ Mark as Received",
+                    font=("Courier New", 18),
+                    fg=colors['bg_primary'],
+                    bg=colors['accent_green'],
+                    relief="flat",
+                    activebackground=colors['accent_green'],
+                    activeforeground=colors['bg_primary'],
+                    cursor="hand2",
+                    command=lambda: self.mark_as_received(document[0], detail_window)
+                )
+                receive_btn.pack(side=tk.LEFT, padx=30)
+
+            # Configure scrolling
+            def configure_scroll_region(event=None):
+                canvas.configure(scrollregion=canvas.bbox("all"))
+                
+            content_frame.bind('<Configure>', configure_scroll_region)
             
-            # Configure the scrollregion
-            content_frame.update_idletasks()
-            canvas.configure(scrollregion=canvas.bbox("all"))
+            # Mouse wheel scrolling
+            def on_mousewheel(event):
+                canvas.yview_scroll(int(-1*(event.delta/120)), "units")
             
+            canvas.bind("<MouseWheel>", on_mousewheel)
+            detail_window.bind("<MouseWheel>", on_mousewheel)
+
+            # Initial scroll region configuration
+            detail_window.after(100, configure_scroll_region)
+
         except sqlite3.Error as e:
-            messagebox.showerror("Database Error", f"Failed to load document details: {e}", parent=self.root)
+            messagebox.showerror("Database Error", f"Failed to load document details:\n{str(e)}", parent=self.root)
 
     def mark_as_received(self, doc_id, window):
         """Mark a pending document as received"""

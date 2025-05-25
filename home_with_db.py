@@ -1176,6 +1176,8 @@ class DocuSortApp:
     - Course: {self.course}
     - Faculty: {self.faculty}
     - Document Status: Pending
+    - Document Description: {self.document_description if self.document_description else "No description provided"}
+    - Timestamp: {submission_time}
 
     Please contact a Docusort representative to collect the document.
 

@@ -3,7 +3,8 @@ from tkinter import ttk, messagebox
 import sqlite3
 from PIL import Image, ImageTk
 from datetime import datetime  
-
+import os
+import sys
 
 
 class AdminApp:
@@ -51,6 +52,15 @@ class AdminApp:
         self.admin_home_page()
         self.root.protocol("WM_DELETE_WINDOW", self.logout)
 
+    def resource_path(self, relative_path):
+        """ Get absolute path to resource (for dev and PyInstaller .exe) """
+        try:
+            # PyInstaller stores temp path in _MEIPASS
+            base_path = sys._MEIPASS
+        except AttributeError:
+            # Running in development mode
+            base_path = os.path.abspath(".")
+        return os.path.join(base_path, relative_path)
     
     def toggle_fullscreen(self, event=None):
         self.root.attributes("-fullscreen", True)
@@ -71,7 +81,8 @@ class AdminApp:
 
         # Load the main image (now above "Admin Panel")
         try:
-            image = Image.open("resources/docusort_test.png")
+            image_path = self.resource_path("resources/docusort_test.png")
+            image = Image.open(image_path)
             image = image.resize((64, 64))  # Resize to a small icon
             self.photo = ImageTk.PhotoImage(image)
 
@@ -173,7 +184,7 @@ class AdminApp:
         welcome_label.pack(pady=10)
         
         # Get document counts from database
-        conn = sqlite3.connect("docusortDB.db")
+        conn = sqlite3.connect(self.resource_path("docusortDB.db"))
         cursor = conn.cursor()
         
         cursor.execute("SELECT COUNT(*) FROM documents WHERE doc_type = 'Pending'")
@@ -657,7 +668,7 @@ class AdminApp:
         """Convert all pending documents to received status"""
         try:
             # First, count how many documents will be affected
-            conn = sqlite3.connect("docusortDB.db")
+            conn = sqlite3.connect(self.resource_path("docusortDB.db"))
             cursor = conn.cursor()
             
             cursor.execute("SELECT COUNT(*) FROM documents WHERE doc_type = 'Pending'")
@@ -786,7 +797,7 @@ class AdminApp:
 
     # ------------------ GET ALL PENDING DATA ------------------
     def get_all_pending_data(self):
-        conn = sqlite3.connect("docusortDB.db")
+        conn = sqlite3.connect(self.resource_path("docusortDB.db"))
         cursor = conn.cursor()
         cursor.execute("""
             SELECT sender_fname, sender_surname, studnum, sender_fac, doc_type, datetime, id
@@ -828,7 +839,7 @@ class AdminApp:
 
     # ------------------ GET ALL RECEIVED DATA ------------------
     def get_all_received_data(self):
-        conn = sqlite3.connect("docusortDB.db")
+        conn = sqlite3.connect(self.resource_path("docusortDB.db"))
         cursor = conn.cursor()
         cursor.execute("""
             SELECT sender_fname, sender_surname, studnum, sender_fac, doc_type, datetime, id
@@ -986,7 +997,7 @@ class AdminApp:
     # Add this method to update the status of a document
     def update_document_status(self, studnum, datetime_val, new_status):
         """Update a document's status and refresh all related data"""
-        conn = sqlite3.connect("docusortDB.db")
+        conn = sqlite3.connect(self.resource_path("docusortDB.db"))
         cursor = conn.cursor()
         
         # Update the document status
@@ -1028,7 +1039,7 @@ class AdminApp:
 
         # Fetch detailed information from database
         try:
-            conn = sqlite3.connect("docusortDB.db")
+            conn = sqlite3.connect(self.resource_path("docusortDB.db"))
             cursor = conn.cursor()
 
             cursor.execute("""
@@ -1277,7 +1288,7 @@ class AdminApp:
     def mark_as_received(self, doc_id, window):
         """Mark a pending document as received"""
         try:
-            conn = sqlite3.connect("docusortDB.db")
+            conn = sqlite3.connect(self.resource_path("docusortDB.db"))
             cursor = conn.cursor()
             
             # Update document status
@@ -1300,7 +1311,7 @@ class AdminApp:
             self.load_received_table()
             
             # Update dashboard counts
-            conn = sqlite3.connect("docusortDB.db")
+            conn = sqlite3.connect(self.resource_path("docusortDB.db"))
             cursor = conn.cursor()
             
             cursor.execute("SELECT COUNT(*) FROM documents WHERE doc_type = 'Pending'")
@@ -1368,7 +1379,7 @@ class AdminApp:
         student_number = self.pending_tree.item(selected_item[0], 'values')[2]
         
         try:
-            conn = sqlite3.connect("docusortDB.db")
+            conn = sqlite3.connect(self.resource_path("docusortDB.db"))
             cursor = conn.cursor()
             
             # Get the document ID based on student number
@@ -1451,7 +1462,7 @@ class AdminApp:
 
         try:
             # Connect to the database
-            conn = sqlite3.connect("docusortDB.db")
+            conn = sqlite3.connect(self.resource_path("docusortDB.db"))
             cursor = conn.cursor()
 
             # Check if admin_users table exists
@@ -1521,7 +1532,7 @@ class AdminApp:
 
         try:
             # Check password of the currently logged-in user
-            conn = sqlite3.connect("docusortDB.db")
+            conn = sqlite3.connect(self.resource_path("docusortDB.db"))
             cursor = conn.cursor()
 
             cursor.execute("SELECT password FROM admin_users WHERE username = ?", (self.current_user_username,))
@@ -1769,7 +1780,7 @@ class AdminApp:
             return
 
         try:
-            conn = sqlite3.connect("docusortDB.db")
+            conn = sqlite3.connect(self.resource_path("docusortDB.db"))
             cursor = conn.cursor()
 
             # Check if FULL NAME already exists
@@ -1824,7 +1835,7 @@ class AdminApp:
             print("Logging out and going back to login page")
             self.root.destroy()  # Close admin window
 
-            from home_with_db import DocuSortApp
+            from DocuSort import DocuSortApp
             login_window = tk.Toplevel(self.login_root)
             app_instance = DocuSortApp(login_window)
             app_instance.go_back_to_landing_page()
